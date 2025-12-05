@@ -46,9 +46,7 @@ flowchart LR
 │ ├── scoring # module for generating confidence scores
 │ ├── utils/ # Helper modules for setting up CLI etc.
 │ └── tests/ # Unit and integration tests 
-├── docs/ # Extended documentation 
-├── environment.yml # Conda environment specification 
-├── requirements.txt # Python dependencies 
+├── pyproject.toml # Python dependencies 
 ├── LICENSE 
 └── README.md 
 ```
@@ -58,10 +56,20 @@ flowchart LR
 ## Installation 
 
 First clone the repo and navigate into the directory.
+
+### Option A: Clone with HTTPS
 ```bash
-git clone <path/to/repo>
-cd path/to/repo>
+git clone https://github.com/Digital-Metabolic-Twin-Centre/stereomapper.git
+cd stereomapper
 ```
+
+### Option B: Clone with SSH
+```bash
+git clone git@github.com:Digital-Metabolic-Twin-Centre/stereomapper.git
+cd stereomapper
+```
+
+Now ensure you create a virtual environment to install the stereomapper package.
 
 ### Option A: Conda
 ```bash
