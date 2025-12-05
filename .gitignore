@@ -1,0 +1,9 @@
+logs/
+.ipynb_checkpoints
+__pycache__/
+old/
+*.log
+.vscode/
+build/
+*.egg-info/
+.env

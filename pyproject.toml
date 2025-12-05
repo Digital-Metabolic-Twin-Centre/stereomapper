@@ -1,0 +1,48 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "stereomapper"
+version = "0.1.0"
+description = "Stereochemistry-aware molecular relationship pipeline"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { file = "LICENSE" }
+authors = [{ name = "Jack McGoldrick", email = "j.mcgoldrick9@universityofgalway.ie" }]
+
+# Adjust these to what you actually need / can install via pip:
+dependencies = [
+    "pandas",
+    "rdkit==2025.3.3",
+    "openbabel-wheel==3.1.1.22",
+    "numpy==1.26.4",
+    "psutil==7.0.0",
+    "tqdm==4.67.1",
+    "platformdirs==4.3.8"
+]
+
+[project.scripts]
+# Creates a `stereomapper` command that calls stereomapper/cli.py:main
+stereomapper = "stereomapper.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+# If you ship non-.py files (e.g., SQL templates, data), enable one of:
+# include-package-data = true
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+ignore_missing_imports = true
+warn_unused_ignores = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+norecursedirs = ["old", "build", "dist", ".venv", "venv", "env", ".git", "data", "__pycache__"]
+addopts = "-ra"
+
