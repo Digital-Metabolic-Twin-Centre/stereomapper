@@ -467,18 +467,15 @@ class BulkMoleculeProcessor:
             # Extract metadata
             metadata = self.molecule_processor.process_molecule_metadata(path_str)
 
-            # Process chemistry - debug the canon_map lookup
-            canon_smiles = canon_map.get(path_str)
+            # Process chemistry - normalize path for canon_map lookup
+            # The canon_map uses normalized paths from canonicalise_molfiles_batch
+            normalized_path = str(Path(path_str).expanduser().resolve())
+            canon_smiles = canon_map.get(normalized_path)
+            
             if canon_smiles is None:
-                # Try looking up with different path representations
-                abs_path = os.path.abspath(path_str)
-                canon_smiles = canon_map.get(abs_path)
-                if canon_smiles is None:
-                    # Try with original path if it was normalized
-                    for key in canon_map.keys():
-                        if os.path.samefile(key, path_str):
-                            canon_smiles = canon_map[key]
-                            break
+                # Log warning if canonical SMILES not found
+                logger.debug(f"[canon_lookup] No canonical SMILES found for {normalized_path}")
+                logger.debug(f"[canon_lookup] Available keys sample: {list(canon_map.keys())[:3]}")
 
             # process the metabolite to get structural identifiers
             smiles, inchikey_first, inchikey_full = (

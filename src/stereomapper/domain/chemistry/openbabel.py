@@ -4,6 +4,7 @@ import logging
 import subprocess
 import tempfile
 import os
+from pathlib import Path
 from typing import Optional, List, Dict
 from stereomapper.domain.exceptions.validation import (
     CanonicalizationError,
@@ -100,23 +101,41 @@ class OpenBabelOperations:
 
     @staticmethod
     def canonicalise_molfiles_batch(molfile_paths: List[str]) -> Dict[str, Optional[str]]:
-        """Batch canonicalize multiple molfiles using OpenBabel."""
+        """Batch canonicalize multiple molfiles using OpenBabel.
+        
+        Args:
+            molfile_paths: List of paths to molfiles. Paths will be normalized internally.
+            
+        Returns:
+            Dictionary mapping normalized paths to canonical SMILES (or None if failed).
+        """
         if not molfile_paths:
             return {}
 
         results: Dict[str, Optional[str]] = {}
         valid_paths: List[str] = []
 
-        # --- 1. Validate paths safely ---
+        # --- 1. Validate and normalize paths safely ---
         for path in molfile_paths:
             try:
-                if not os.path.isfile(path):
-                    results[path] = None
+                # Normalize path to absolute resolved path for consistency
+                # Even if input is already normalized, this is idempotent
+                normalized_path = str(Path(path).expanduser().resolve())
+                
+                if not os.path.isfile(normalized_path):
+                    # Store with normalized path for consistency
+                    results[normalized_path] = None
                     logger.warning(f"File not found in batch: {path}")
                 else:
-                    valid_paths.append(path)
+                    valid_paths.append(normalized_path)
             except Exception as e:
-                results[path] = None
+                # On error, still try to normalize for consistent key
+                try:
+                    normalized_path = str(Path(path).expanduser().resolve())
+                    results[normalized_path] = None
+                except:
+                    # If even normalization fails, use original path
+                    results[path] = None
                 logger.error(f"Error validating path {path}: {e}")
 
         if not valid_paths:
@@ -155,7 +174,8 @@ class OpenBabelOperations:
 
                 if result.returncode != 0:
                     error_msg = result.stderr.strip() or "Unknown batch error"
-                    logger.warning(f"OpenBabel batch processing failed: {error_msg}")
+                    logger.warning(f"OpenBabel batch processing failed (returncode={result.returncode}): {error_msg}")
+                    logger.debug(f"Failed batch size: {len(subpaths)}, first file: {subpaths[0] if subpaths else 'N/A'}")
                     # Fall back to per-file canonicalization
                     individual_results = OpenBabelOperations._fallback_individual_processing(subpaths)
                     results.update(individual_results)
@@ -168,6 +188,7 @@ class OpenBabelOperations:
                 for path, line in zip(subpaths, output_lines):
                     parts = line.split('\t') if '\t' in line else line.split()
                     smiles = parts[0].strip() if parts else None
+                    # Store with normalized path for consistent lookup
                     results[path] = smiles or None
 
                 # Any missing outputs -> None

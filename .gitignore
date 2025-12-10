@@ -7,3 +7,4 @@ old/
 build/
 *.egg-info/
 .env
+uv.lock

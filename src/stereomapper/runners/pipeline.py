@@ -44,19 +44,6 @@ logger, summary_logger = setup_logging(
     console_level="ERROR"   # Only errors to console
 )
 
-# @dataclass
-# class PipelineConfig:
-#     """Pipeline configuration - keep unchanged for compatibility."""
-#     input: Optional[List[str]]
-#     input_dir: Optional[str] = None
-#     recursive: bool = False
-#     extensions = (".mol", ".sdf")
-#     sqlite_output_path: str = None
-#     cache_path: Optional[str] = None
-#     fresh_cache: bool = False
-#     namespace: str = "default"
-#     relate_with_cache: bool = False
-
 @dataclass
 class PipelineResult:
     """Pipeline execution result."""
