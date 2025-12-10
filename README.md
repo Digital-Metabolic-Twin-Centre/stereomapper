@@ -1,6 +1,5 @@
 # StereoMapper: Clarifying Metabolite Identity Through Stereochemically Aware Relationship Assignment
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![OS](https://img.shields.io/badge/OS-Linux%20%7C%20macOS-blue)]()
 [![Python](https://img.shields.io/badge/Python-%E2%89%A5%203.8-informational)]()
 
