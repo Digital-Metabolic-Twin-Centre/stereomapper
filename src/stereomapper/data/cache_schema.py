@@ -1,4 +1,5 @@
-"""Functionality to create the cache database"""
+# data/cache_schema.py
+from pathlib import Path
 import sqlite3
 
 def create_cache(con) -> sqlite3.Connection:

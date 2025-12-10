@@ -1,9 +1,9 @@
 """ Specifies the Class for Stereo Classification """
 
 from dataclasses import dataclass, asdict
-from typing import Dict, Optional, Any, Literal
-from enum import Enum
+from typing import List, Dict, Optional, Any, Literal
 import numpy as np
+from enum import Enum 
 
 class StereoClass(Enum):
     IDENTICAL = "Identical structures"
@@ -52,7 +52,7 @@ class StereoClassification:
             out["confidence_bin"] = None
             out["confidence"] = None
         return out
-
+    
     # -------- base factory with confidence plumbing --------
     @classmethod
     def _base(
@@ -91,46 +91,46 @@ class StereoClassification:
     @classmethod
     def identical(cls, **kwargs) -> "StereoClassification":
         return cls._base(classification=StereoClass.IDENTICAL, **kwargs)
-
+    
     @classmethod
     def unresolved(cls, **kwargs) -> "StereoClassification":
         return cls._base(classification=StereoClass.UNRESOLVED, **kwargs)
-
+    
     @classmethod
     def identical_missing_charge(cls, **kwargs) -> "StereoClassification":
         return cls._base(classification=StereoClass.IDENTICAL_MISSING_CHARGE, **kwargs)
-
-
+        
+    
     @classmethod
     def protomers(cls, **kwargs) -> "StereoClassification":
         return cls._base(classification=StereoClass.PROTOMERS, **kwargs)
-
+    
     ## --------------- Class Methods for Stereoisomeric Structures --------------- ##
     #################################################################################
-
+    
     @classmethod
     def enantiomers(cls, **kwargs) -> "StereoClassification":
         """Accepts stereo_score=int|float and/or confidence=dict."""
         return cls._base(classification=StereoClass.ENANTIOMERS, **kwargs)
-
+    
     @classmethod
     def diastereomers(cls, **kwargs) -> "StereoClassification":
         return cls._base(classification=StereoClass.DIASTEREOMERS, **kwargs)
-
+    
     @classmethod
     def putative_structures(cls, **kwargs) -> "StereoClassification":
         return cls._base(classification=StereoClass.PUTATIVE, **kwargs)
-
+    
         ## --------------- Class Methods for Ambiguous/Undefined Structures --------------- ##
         #####################################################################################
-
+    
     @classmethod
     def ambiguous_structures(cls, **kwargs) -> "StereoClassification":
         return cls._base(classification=StereoClass.AMBIGUOUS, **kwargs)
-
+    
         ## --------------- Class Methods for Planar vs Stereo Structures --------------- ##
         #####################################################################################
-
+    
     @classmethod
     def planar_vs_stereo(cls, **kwargs) -> "StereoClassification":
         return cls._base(classification=StereoClass.PLANAR_VS_STEREO, **kwargs)
@@ -143,7 +143,7 @@ class StereoClassification:
 
         ## --------------- Class Methods for No Classification --------------- ##
         #####################################################################################
-
+    
     @classmethod
     def no_classification(cls):
         """ Return a StereoClassification instance for no classification """
@@ -152,4 +152,3 @@ class StereoClassification:
             rmsd=np.nan,
             penalties=[]
         )
-    

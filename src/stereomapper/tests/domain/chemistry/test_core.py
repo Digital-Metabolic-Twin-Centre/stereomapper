@@ -49,7 +49,7 @@ class TestIdentifyStereogenicElements:
     def test_identify_stereogenic_elements_simple_mol(self, simple_mol):
         """Test with a simple molecule without stereocenters."""
         result = StereoAnalyser.identify_stereogenic_elements(simple_mol, "ethanol.mol")
-
+        
         assert isinstance(result, dict)
         assert "ethanol" in result
         assert isinstance(result["ethanol"], list)
@@ -59,13 +59,13 @@ class TestIdentifyStereogenicElements:
     def test_identify_stereogenic_elements_chiral_mol(self, chiral_mol):
         """Test with a chiral molecule."""
         result = StereoAnalyser.identify_stereogenic_elements(chiral_mol, "chiral.mol")
-
+        
         assert isinstance(result, dict)
         assert "chiral" in result
         assert isinstance(result["chiral"], list)
         # Should find at least one stereocenter
         assert len(result["chiral"]) >= 1
-
+        
         # Check the structure of stereo info
         if result["chiral"]:
             stereo_info = result["chiral"][0]
@@ -78,10 +78,10 @@ class TestIdentifyStereogenicElements:
     def test_identify_stereogenic_elements_double_bond(self, double_bond_mol):
         """Test with a molecule containing E/Z stereochemistry."""
         result = StereoAnalyser.identify_stereogenic_elements(double_bond_mol, "alkene.mol")
-
+        
         assert isinstance(result, dict)
         assert "alkene" in result
-
+        
         # Check if double bond stereochemistry is detected
         if result["alkene"]:
             for stereo_info in result["alkene"]:
@@ -106,7 +106,7 @@ class TestIdentifyStereogenicElements:
             ("no_extension", "no_extension"),
             ("", ""),
         ]
-
+        
         for input_name, expected_key in test_cases:
             result = StereoAnalyser.identify_stereogenic_elements(simple_mol, input_name)
             assert expected_key in result
@@ -115,9 +115,9 @@ class TestIdentifyStereogenicElements:
     def test_identify_stereogenic_elements_empty_stereo_info(self, mock_find_stereo, simple_mol):
         """Test when no stereogenic elements are found."""
         mock_find_stereo.return_value = []
-
+        
         result = StereoAnalyser.identify_stereogenic_elements(simple_mol, "test.mol")
-
+        
         assert result == {"test": []}
         mock_find_stereo.assert_called_once_with(simple_mol, cleanIt=True, flagPossible=False)
 
@@ -133,9 +133,9 @@ class TestIdentifyStereogenicElements:
             controlling_atoms=[0, 2, 3, 4]
         )
         mock_find_stereo.return_value = [mock_info]
-
+        
         result = StereoAnalyser.identify_stereogenic_elements(simple_mol, "test.mol")
-
+        
         expected = {
             "test": [{
                 "type": "Atom_Tetrahedral",
@@ -145,7 +145,7 @@ class TestIdentifyStereogenicElements:
                 "controlling_atoms": [0, 2, 3, 4]
             }]
         }
-
+        
         assert result == expected
 
 
@@ -155,30 +155,30 @@ class TestCompareStereoElements:
     def test_compare_stereo_elements_invalid_inputs(self):
         """Test with invalid inputs."""
         mol = Chem.MolFromSmiles("CCO")
-
+        
         with pytest.raises(ValueError, match="Both inputs must be RDKit Mol objects"):
             StereoAnalyser.compare_stereo_elements("not_a_mol", mol)
-
+        
         with pytest.raises(ValueError, match="Both inputs must be RDKit Mol objects"):
             StereoAnalyser.compare_stereo_elements(mol, "not_a_mol")
-
+        
         with pytest.raises(ValueError, match="Both inputs must be RDKit Mol objects"):
             StereoAnalyser.compare_stereo_elements("not_a_mol", "also_not_a_mol")
 
     def test_compare_stereo_elements_simple_molecules(self, simple_mol):
         """Test comparison of simple molecules without stereocenters."""
         result = StereoAnalyser.compare_stereo_elements(simple_mol, simple_mol)
-
+        
         # Check all expected keys are present
         expected_keys = [
             "total_stereo", "total_tetra", "tetra_matches", "tetra_flips",
             "total_db", "db_matches", "db_flips", "unspecified",
             "missing_centres", "details"
         ]
-
+        
         for key in expected_keys:
             assert key in result
-
+        
         # For molecules without stereocenters, all counts should be 0
         assert result["total_stereo"] == 0
         assert result["total_tetra"] == 0
@@ -193,12 +193,12 @@ class TestCompareStereoElements:
     def test_compare_stereo_elements_identical_chiral_molecules(self, chiral_mol):
         """Test comparison of identical chiral molecules."""
         result = StereoAnalyser.compare_stereo_elements(chiral_mol, chiral_mol)
-
+        
         # Should have perfect matches, no flips
         assert result["tetra_flips"] == 0
         assert result["db_flips"] == 0
         assert result["missing_centres"] == 0
-
+        
         # Total stereo should equal matches
         assert result["total_stereo"] == result["tetra_matches"] + result["db_matches"]
 
@@ -213,14 +213,14 @@ class TestCompareStereoElements:
             "descriptor": "R",
             "controlling_atoms": [0, 2, 3, 4]
         }]
-
+        
         mock_identify.side_effect = [
             {"mol1": stereo_data},
             {"mol2": stereo_data}
         ]
-
+        
         result = StereoAnalyser.compare_stereo_elements(simple_mol, simple_mol)
-
+        
         assert result["tetra_matches"] == 1.0
         assert result["tetra_flips"] == 0.0
         assert result["total_tetra"] == 1.0
@@ -236,7 +236,7 @@ class TestCompareStereoElements:
             "descriptor": "R",
             "controlling_atoms": [0, 2, 3, 4]
         }]
-
+        
         stereo_data2 = [{
             "type": "Atom_Tetrahedral",
             "centered_on": 1,
@@ -244,14 +244,14 @@ class TestCompareStereoElements:
             "descriptor": "S",
             "controlling_atoms": [0, 2, 3, 4]
         }]
-
+        
         mock_identify.side_effect = [
             {"mol1": stereo_data1},
             {"mol2": stereo_data2}
         ]
-
+        
         result = StereoAnalyser.compare_stereo_elements(simple_mol, simple_mol)
-
+        
         assert result["tetra_matches"] == 0.0
         assert result["tetra_flips"] == 1.0
         assert result["total_tetra"] == 1.0
@@ -267,14 +267,14 @@ class TestCompareStereoElements:
             "descriptor": "E",
             "controlling_atoms": [0, 2]
         }]
-
+        
         mock_identify.side_effect = [
             {"mol1": stereo_data},
             {"mol2": stereo_data}
         ]
-
+        
         result = StereoAnalyser.compare_stereo_elements(simple_mol, simple_mol)
-
+        
         assert result["db_matches"] == 1.0
         assert result["db_flips"] == 0.0
         assert result["total_db"] == 1.0
@@ -290,7 +290,7 @@ class TestCompareStereoElements:
             "descriptor": "E",
             "controlling_atoms": [0, 2]
         }]
-
+        
         stereo_data2 = [{
             "type": "Bond_Double",
             "centered_on": 1,
@@ -298,14 +298,14 @@ class TestCompareStereoElements:
             "descriptor": "Z",
             "controlling_atoms": [0, 2]
         }]
-
+        
         mock_identify.side_effect = [
             {"mol1": stereo_data1},
             {"mol2": stereo_data2}
         ]
-
+        
         result = StereoAnalyser.compare_stereo_elements(simple_mol, simple_mol)
-
+        
         assert result["db_matches"] == 0.0
         assert result["db_flips"] == 1.0
         assert result["total_db"] == 1.0
@@ -321,16 +321,16 @@ class TestCompareStereoElements:
             "descriptor": "R",
             "controlling_atoms": [0, 2, 3, 4]
         }]
-
+        
         stereo_data2 = []
-
+        
         mock_identify.side_effect = [
             {"mol1": stereo_data1},
             {"mol2": stereo_data2}
         ]
-
+        
         result = StereoAnalyser.compare_stereo_elements(simple_mol, simple_mol)
-
+        
         assert result["missing_centres"] == 1.0
         assert result["tetra_matches"] == 0.0
         assert result["tetra_flips"] == 0.0
@@ -346,14 +346,14 @@ class TestCompareStereoElements:
             "descriptor": "Unknown",
             "controlling_atoms": [0, 2, 3, 4]
         }]
-
+        
         mock_identify.side_effect = [
             {"mol1": stereo_data},
             {"mol2": stereo_data}
         ]
-
+        
         result = StereoAnalyser.compare_stereo_elements(simple_mol, simple_mol)
-
+        
         assert result["missing_centres"] == 1.0
         assert result["tetra_matches"] == 0.0
         assert result["tetra_flips"] == 0.0
@@ -378,14 +378,14 @@ class TestCompareStereoElements:
                 "controlling_atoms": [1, 3]
             }
         ]
-
+        
         mock_identify.side_effect = [
             {"mol1": stereo_data},
             {"mol2": stereo_data}
         ]
-
+        
         result = StereoAnalyser.compare_stereo_elements(simple_mol, simple_mol)
-
+        
         assert result["tetra_matches"] == 1.0
         assert result["db_matches"] == 1.0
         assert result["total_tetra"] == 1.0
@@ -402,7 +402,7 @@ class TestCompareStereoElements:
             "descriptor": "R",
             "controlling_atoms": [0, 2, 3, 4]
         }]
-
+        
         stereo_data2 = [{
             "type": "Atom_Tetrahedral",
             "centered_on": 1,
@@ -410,14 +410,14 @@ class TestCompareStereoElements:
             "descriptor": "R",
             "controlling_atoms": [0, 2, 3, 5]  # Different controlling atoms
         }]
-
+        
         mock_identify.side_effect = [
             {"mol1": stereo_data1},
             {"mol2": stereo_data2}
         ]
-
+        
         result = StereoAnalyser.compare_stereo_elements(simple_mol, simple_mol)
-
+        
         # Should not match due to different controlling atoms
         assert result["missing_centres"] == 2.0
         assert result["tetra_matches"] == 0.0
@@ -426,7 +426,7 @@ class TestCompareStereoElements:
     def test_compare_stereo_elements_identify_failure(self, mock_identify, simple_mol):
         """Test handling when stereogenic element identification fails."""
         mock_identify.side_effect = [None, {"mol2": []}]
-
+        
         with pytest.raises(ValueError, match="Could not identify stereogenic elements"):
             StereoAnalyser.compare_stereo_elements(simple_mol, simple_mol)
 
@@ -440,7 +440,7 @@ class TestCompareStereoElements:
             "descriptor": "R",
             "controlling_atoms": [0, 2, 3, 4]
         }]
-
+        
         stereo_data2 = [{
             "type": "Atom_Tetrahedral",
             "centered_on": 1,
@@ -448,14 +448,14 @@ class TestCompareStereoElements:
             "descriptor": "S",
             "controlling_atoms": [0, 2, 3, 4]
         }]
-
+        
         mock_identify.side_effect = [
             {"mol1": stereo_data1},
             {"mol2": stereo_data2}
         ]
-
+        
         result = StereoAnalyser.compare_stereo_elements(simple_mol, simple_mol)
-
+        
         assert len(result["details"]) == 1
         detail = result["details"][0]
         assert len(detail) == 2
@@ -488,7 +488,7 @@ class TestCompareStereoElements:
                 "controlling_atoms": [4, 6, 7, 8]
             }
         ]
-
+        
         stereo_data2 = [
             {
                 "type": "Atom_Tetrahedral",
@@ -506,14 +506,14 @@ class TestCompareStereoElements:
             }
             # Missing the third stereocenter
         ]
-
+        
         mock_identify.side_effect = [
             {"mol1": stereo_data1},
             {"mol2": stereo_data2}
         ]
-
+        
         result = StereoAnalyser.compare_stereo_elements(simple_mol, simple_mol)
-
+        
         assert result["tetra_matches"] == 0.0
         assert result["tetra_flips"] == 1.0
         assert result["db_matches"] == 1.0
@@ -530,18 +530,18 @@ class TestStereoAnalyserIntegration:
         # Test with real chiral molecules
         mol1 = Chem.MolFromSmiles("C[C@H](O)N")  # (R)-configuration
         mol2 = Chem.MolFromSmiles("C[C@@H](O)N")  # (S)-configuration
-
+        
         if mol1 is not None and mol2 is not None:
             # Test identification
             stereo1 = StereoAnalyser.identify_stereogenic_elements(mol1, "mol1.mol")
             stereo2 = StereoAnalyser.identify_stereogenic_elements(mol2, "mol2.mol")
-
+            
             assert isinstance(stereo1, dict)
             assert isinstance(stereo2, dict)
-
+            
             # Test comparison
             result = StereoAnalyser.compare_stereo_elements(mol1, mol2)
-
+            
             # Should detect the stereochemical difference
             assert isinstance(result, dict)
             assert "tetra_flips" in result
@@ -551,7 +551,7 @@ class TestStereoAnalyserIntegration:
     #     """Test that appropriate logging occurs."""
     #     with caplog.at_level(logging.DEBUG, logger=logger.name):
     #         StereoAnalyser.identify_stereogenic_elements(simple_mol, "test.mol")
-
+        
     #     # Should log when no stereogenic elements are found
     #     assert "No stereogenic elements found" in caplog.text
 
@@ -560,11 +560,11 @@ class TestStereoAnalyserIntegration:
         # Test with invalid molecule
         with pytest.raises(ValueError):
             StereoAnalyser.identify_stereogenic_elements("invalid", "test.mol")
-
+        
         # Test with None molecule
         with pytest.raises(ValueError):
             StereoAnalyser.identify_stereogenic_elements(None, "test.mol")
-
+        
         # Test comparison with invalid molecules
         valid_mol = Chem.MolFromSmiles("CCO")
         with pytest.raises(ValueError):
@@ -574,17 +574,17 @@ class TestStereoAnalyserIntegration:
         """Test that methods are properly static."""
         # Should be able to call without instantiating the class
         mol = Chem.MolFromSmiles("CCO")
-
+        
         result1 = StereoAnalyser.identify_stereogenic_elements(mol, "test.mol")
         result2 = StereoAnalyser.compare_stereo_elements(mol, mol)
-
+        
         assert isinstance(result1, dict)
         assert isinstance(result2, dict)
-
+        
         # Should also work with class instance
         analyser = StereoAnalyser()
         result3 = analyser.identify_stereogenic_elements(mol, "test.mol")
         result4 = analyser.compare_stereo_elements(mol, mol)
-
+        
         assert result1 == result3
         assert result2 == result4

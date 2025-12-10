@@ -2,7 +2,7 @@
 
 from .models import (
     CacheEntry,
-    ProcessingResult,
+    ProcessingResult, 
     SimilarityResult,
     ClusterData,
     PipelineStats
@@ -10,8 +10,8 @@ from .models import (
 
 __all__ = [
     "CacheEntry",
-    "ProcessingResult",
-    "SimilarityResult",
+    "ProcessingResult", 
+    "SimilarityResult", 
     "ClusterData",
     "PipelineStats"
 ]

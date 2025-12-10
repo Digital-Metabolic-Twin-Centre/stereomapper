@@ -4,8 +4,6 @@
 import math
 from typing import Dict, Any, Optional
 from stereomapper.utils.logging import setup_logging
-from stereomapper.models.stereo_elements import StereoCounts
-from stereomapper.models.stereo_elements import StereoCounts
 
 from .models import ConfidenceResult
 
@@ -30,14 +28,14 @@ def exp_decay_rmsd_class_aware(rmsd: Optional[float], assigned_class: str) -> fl
     """Class-aware RMSD scoring with different scales."""
     if not _isnum(rmsd) or rmsd < 0:
         return 0.0
-
+    
     if assigned_class in {"ENANTIOMERS", "ENANTIOMER"}:
         scale = 0.3  # Stricter for enantiomers
     elif assigned_class in {"IDENTICAL", "IDENTICALS", "IDENTICAL_MOLECULES"}:
         scale = 0.1  # Very strict for identical
     else:
         scale = 0.75  # Default
-
+        
     return clamp01(math.exp(-rmsd / scale))
 
 def undef_sites_penalty(n_undef: Optional[int]) -> float:
@@ -61,7 +59,7 @@ def _bin_class_aware(score: int, assigned_class: str) -> str:
 
 class ConfidenceScorer:
     """Main confidence scoring engine."""
-
+    
     def score(
         self,
         assigned_class: str,
@@ -72,21 +70,23 @@ class ConfidenceScorer:
         ik_first_eq: Optional[int] = None,
         ik_stereo_layer_eq: Optional[int] = None,
         ik_protonation_layer_eq: Optional[int] = None,
-        counts: StereoCounts = None,
-        **kwargs,
+        num_stereogenic_elements: Optional[int] = None,
+        num_tetra_matches: Optional[int] = None,
+        num_tetra_flips: Optional[int] = None,
+        num_db_matches: Optional[int] = None,
+        num_db_flips: Optional[int] = None,
+        num_missing: Optional[int] = None,
     ) -> ConfidenceResult:
         """
         Heuristic, class-aware confidence. Robust to None/NaN inputs.
         """
-
-        counts = self._build_counts(counts, kwargs)
         # Normalised helpers
         geom = exp_decay_rmsd_class_aware(rmsd, assigned_class)
 
         # compute relevant stereo fractions
-        denom = max(1, _nz(counts.num_stereogenic_elements, 0))
-        stereo_match_frac = (_nz(counts.num_tetra_matches,0) + _nz(counts.num_db_matches,0)) / denom
-        stereo_opposite_frac = (_nz(counts.num_tetra_flips,0) + _nz(counts.num_db_flips,0)) / denom
+        denom = max(1, _nz(num_stereogenic_elements, 0))
+        stereo_match_frac = (_nz(num_tetra_matches,0) + _nz(num_db_matches,0)) / denom
+        stereo_opposite_frac = (_nz(num_tetra_flips,0) + _nz(num_db_flips,0)) / denom
         # ---- Core score components ----
 
         # Safe numbers
@@ -108,7 +108,7 @@ class ConfidenceScorer:
 
         if assigned_class in {"IDENTICAL", "IDENTICALS", "IDENTICAL_MOLECULES", "UNRESOLVED"}:
             # ensure only matches are present if stereogenic elements exits
-            if counts.num_stereogenic_elements and counts.num_stereogenic_elements > 0:
+            if num_stereogenic_elements and num_stereogenic_elements > 0:
                 # ensure no opposite stereo
                 if so > 0:
                     stereo_consistency_mult = 0.1  # Heavily penalize any opposite stereo
@@ -117,7 +117,7 @@ class ConfidenceScorer:
                 else:
                     stereo_consistency_mult = 1.0  # Perfect
             else:
-                stereo_consistency_mult = 1.0  # No stereogenic elements, no penalty needed
+                stereo_consistency_mult = 1.0  # No stereogenic elements, no penalty needed                    
             S = (0.50*stereo_consistency_mult + 0.25*geom + 0.25*tan2d)
             contributors.update({
                 "stereo_consistency_mult*0.50": 0.50*stereo_consistency_mult,
@@ -126,7 +126,7 @@ class ConfidenceScorer:
             })
             expect = {"ik_first_eq":1, "ik_stereo_layer_eq":1, "ik_protonation_layer_eq":1, "charge_match":1}
 
-        elif assigned_class in {"PROTOMERS", "IDENTICAL_DIFFERENT_CHARGE", "IDENTICAL_CHARGE_DIFF"}:
+        elif assigned_class in {"PROTOMERS", "IDENTICAL_DIFFERENT_CHARGE", "IDENTICAL_CHARGE_DIFF"}: 
             # similar to identical but allow charge mismatch
             charge_match = _nz(charge_match, 0)
             chg = 1 if charge_match==1 else 0
@@ -137,7 +137,7 @@ class ConfidenceScorer:
             else:
                 charge_mult = 1.0
             # ensure only matches are present if stereogenic elements exists
-            if counts.num_stereogenic_elements and counts.num_stereogenic_elements > 0:
+            if num_stereogenic_elements and num_stereogenic_elements > 0:
                 # ensure no opposite stereo
                 if so > 0:
                     stereo_consistency_mult = 0.1  # Heavily penalize any opposite stereo
@@ -148,7 +148,7 @@ class ConfidenceScorer:
             else:
                 stereo_consistency_mult = 1.0  # No stereogenic elements, no penalty needed
 
-            S = (0.50*charge_mult + 0.25*geom + 0.25*tan2d) * stereo_consistency_mult
+            S = (0.50*charge_mult + 0.25*geom + 0.25*tan2d) * stereo_consistency_mult 
             contributors.update({
                 "charge_mult*0.50": 0.50*charge_mult,
                 "geom*0.25": 0.25*geom,
@@ -167,31 +167,31 @@ class ConfidenceScorer:
             expect = {"ik_first_eq":1, "ik_stereo_layer_eq":1}
 
         elif assigned_class in {"ENANTIOMERS", "ENANTIOMER"}:
-            expected_stereo = _nz(counts.num_stereogenic_elements, 0)
-            actual_flips = _nz(counts.num_tetra_flips, 0)
-            actual_matches = _nz(counts.num_tetra_matches, 0)
-            actual_db_flips = _nz(counts.num_db_flips, 0)
-            actual_db_matches = _nz(counts.num_db_matches, 0)
-            num_missing = _nz(counts.num_missing, 0)
-
+            expected_stereo = _nz(num_stereogenic_elements, 0)  
+            actual_flips = _nz(num_tetra_flips, 0)
+            actual_matches = _nz(num_tetra_matches, 0)
+            actual_db_flips = _nz(num_db_flips, 0)
+            actual_db_matches = _nz(num_db_matches, 0)
+            num_missing = _nz(num_missing, 0)
+            
             # explicit check for db flips, should == 0
             if actual_db_flips > 0:
                 stereo_consistency_mult = 0.1
-                partial_penalty = max(0, sm * 2.0)
+                partial_penalty = max(0, sm * 2.0)  
             elif num_missing > 0:
                 stereo_consistency_mult = 0.2
-                partial_penalty = max(0, sm * 2.0)
+                partial_penalty = max(0, sm * 2.0) 
             elif ((actual_flips + actual_db_matches) == expected_stereo) and actual_matches == 0:
                 stereo_consistency_mult = 1.0
                 partial_penalty = 0.0
             elif actual_matches > 0:
                 stereo_consistency_mult = 0.3
-                partial_penalty = max(0, sm * 2.0)
+                partial_penalty = max(0, sm * 2.0)  
             else:
                 stereo_consistency_mult = 0.6
-                partial_penalty = max(0, sm * 2.0)
-
-            S = (0.50*stereo_consistency_mult + 0.25*geom + 0.25*tan2d - 0.10*partial_penalty)
+                partial_penalty = max(0, sm * 2.0)  
+            
+            S = (0.50*stereo_consistency_mult + 0.25*geom + 0.25*tan2d - 0.10*partial_penalty) 
             contributors.update({
                 "stereo_consistency_mult*0.50": 0.50*stereo_consistency_mult,
                 "geom*0.25": 0.25*geom,
@@ -204,12 +204,12 @@ class ConfidenceScorer:
             # diff term should be a weighted calculation, dependent on number of stereo elements
 
             # diff to enantiomers, expect some matches
-            num_missing = _nz(counts.num_missing, 0)
-            num_tetra_flips = _nz(counts.num_tetra_flips, 0)
-            num_tetra_matches = _nz(counts.num_tetra_matches, 0)
-            num_db_flips = _nz(counts.num_db_flips, 0)
-            num_db_matches = _nz(counts.num_db_matches, 0)
-            expected_stereo_elements= _nz(counts.num_stereogenic_elements, 0)
+            num_missing = _nz(num_missing, 0)
+            num_tetra_flips = _nz(num_tetra_flips, 0)
+            num_tetra_matches = _nz(num_tetra_matches, 0)
+            num_db_flips = _nz(num_db_flips, 0)
+            num_db_matches = _nz(num_db_matches, 0)
+            expected_stereo_elements= _nz(num_stereogenic_elements, 0)
             actual_elements = num_tetra_flips + num_tetra_matches + num_db_flips + num_db_matches
 
             # cant calc expected flips, but should be all defined, with some matches , no missing
@@ -238,7 +238,7 @@ class ConfidenceScorer:
         elif assigned_class in {"PLANAR_VS_STEREO", "2D vs 3D structures", "2D vs 3D", "Parent-child",
                                 "STEREO-RESOLUTION PAIRS", "STEREO RESOLUTION PAIRS", "Stereo-resolution pairs"}:
             # expect one to be more stereochemically defined than the other
-            num_missing = _nz(counts.num_missing, 0)
+            num_missing = _nz(num_missing, 0)
             # if structure A has more defined stereo elements than B, assign mult of 1.0
             if num_missing > 0:
                 stereo_consistency_mult = 1.0
@@ -246,7 +246,7 @@ class ConfidenceScorer:
                 stereo_consistency_mult = 0.2  # heavily penalise if both fully defined
             else:
                 stereo_consistency_mult = 0.5  # penalise if both partially defined
-
+           
             S = (0.50*stereo_consistency_mult + 0.25*geom + 0.25*tan2d)
             contributors.update({
                 "stereo_opposite*0.50": 0.50*stereo_consistency_mult,  # Match what you're actually using
@@ -280,18 +280,4 @@ class ConfidenceScorer:
             bin=bin_label,
             contributors=contributors,
             expectations=expectations,
-        )
-
-    def _build_counts(self, counts: StereoCounts, kwargs: dict) -> StereoCounts:
-        if counts is not None:
-            return counts
-
-        return StereoCounts(
-            num_stereogenic_elements=kwargs.get("num_stereogenic_elements", 0),
-            num_tetra_matches=kwargs.get("num_tetra_matches", 0),
-            num_tetra_flips=kwargs.get("num_tetra_flips", 0),
-            num_db_matches=kwargs.get("num_db_matches", 0),
-            num_db_flips=kwargs.get("num_db_flips", 0),
-            num_missing=kwargs.get("num_missing", 0),
-            num_unspecified=kwargs.get("num_unspecified", 0),
         )

@@ -1,29 +1,19 @@
-"""Functionality for resolving default paths to use for cache and output databases"""
+# config/resolvers.py
 from pathlib import Path
 from typing import Optional, Tuple, List
+from stereomapper.data.db import connect
+import os
 from platformdirs import user_cache_dir
-from stereomapper.domain.exceptions.validation import PipelineFileNotFoundError
-
 
 APP = "stereomapper"
 SCHEMA_VERSION = 1  # increment when schema changes
 
 def default_cache_path() -> Path:
-    """
-    Function to create a default cache path.
-
-    Returns:
-    - p: formatted string containing full cache path.
-    """
     p = Path(user_cache_dir(APP))
     p.mkdir(parents=True, exist_ok=True)
     return p / f"structures-v{SCHEMA_VERSION}.sqlite"
 
-def _resolve_cache_path(
-        *,
-        relate_with_cache: bool,
-        fresh_cache: bool,
-        cache_path: Optional[str]) -> Optional[Path]:
+def _resolve_cache_path(*, relate_with_cache: bool, fresh_cache: bool, cache_path: Optional[str]) -> Optional[Path]:
     """
     Decide which cache DB we are using for this run:
     - relate_with_cache=True: must open an existing DB (either provided or default).
@@ -37,7 +27,7 @@ def _resolve_cache_path(
         # Must open an existing DB (either provided or default)
         p = Path(cache_path) if cache_path else default_cache_path()
         if not p.exists():
-            raise PipelineFileNotFoundError(f"relate_with_cache=True but cache DB not found: {p}")
+            raise FileNotFoundError(f"relate_with_cache=True but cache DB not found: {p}")
         return p
 
     if fresh_cache:
@@ -80,11 +70,7 @@ def _resolve_inputs_from_cfg(cfg) -> Tuple[str, ...]:
             if not p.is_file():
                 raise ValueError(f"Input file not found: {item}")
             if p.suffix.lower() not in cfg.extensions:
-                raise ValueError(
-                    f"""
-                    Unsupported input extension for {item} (allowed: {cfg.extensions})
-                    """
-                    )
+                raise ValueError(f"Unsupported input extension for {item} (allowed: {cfg.extensions})")
             files.append(str(p.resolve()))
         # stable & unique
         return tuple(sorted(set(files)))

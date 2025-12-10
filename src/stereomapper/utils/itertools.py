@@ -23,4 +23,3 @@ def chunked(seq: Sequence[T] | Iterable[T], size: int) -> Iterable[list[T]]:
             batch = []
     if batch:
         yield batch
-        

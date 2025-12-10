@@ -1,6 +1,5 @@
-"""Setting up timing operations for stereomapper pipeline"""
-import logging
-import time
+# timing.py
+import logging, time
 from contextlib import contextmanager
 from functools import wraps
 
@@ -9,7 +8,6 @@ def _now():
 
 @contextmanager
 def section_timer(name: str, logger: logging.Logger):
-    """Set up a section specific timer"""
     t0 = _now()
     try:
         yield
@@ -18,7 +16,6 @@ def section_timer(name: str, logger: logging.Logger):
         logger.info("TIMER %s took %.3f s", name, dt)
 
 def timeit(logger: logging.Logger, name: str | None = None):
-    """Time a specific operation"""
     def deco(fn):
         label = name or fn.__qualname__
         @wraps(fn)

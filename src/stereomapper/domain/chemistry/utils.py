@@ -3,19 +3,20 @@
 import logging
 import tempfile
 import os
-import math
 from typing import Optional, Tuple, Dict, Any, Union
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
+import math
 from .core import ChemistryOperations
 from .validation import ChemistryValidator
-from .openbabel import OpenBabelOperations
-
+from stereomapper.utils.suppress import setup_clean_logging
+setup_clean_logging()
 
 logger = logging.getLogger(__name__)
 
 class ChemistryUtils:
     """Chemistry utility operations and helper functions."""
-
+    
     @staticmethod
     def generate_formula_from_file(molfile_path: str) -> Optional[str]:
         """Generate molecular formula from molfile."""
@@ -25,7 +26,7 @@ class ChemistryUtils:
         except Exception:
             logger.exception("Formula generation from file failed for: %s", molfile_path)
             return None
-
+    
     @staticmethod
     def detect_charge(molfile_path: str) -> int:
         """
@@ -36,21 +37,21 @@ class ChemistryUtils:
         charge = ChemistryValidator.detect_charge_from_molfile(molfile_path)
         if charge is not None:
             return charge
-
+        
         # Fallback to manual parsing
         logger.debug("RDKit charge detection failed, using fallback for: %s", molfile_path)
         return ChemistryValidator.fallback_charge_from_molfile(molfile_path)
-
+    
     @staticmethod
     def mol_charge(mol: Chem.Mol) -> int:
         """Get formal charge from RDKit Mol object."""
         return ChemistryOperations.get_formal_charge(mol)
-
+    
     @staticmethod
     def is_wildcard(molfile_path: str) -> bool:
         """Check if molfile contains wildcard atoms."""
         return ChemistryValidator.is_wildcard_molfile(molfile_path)
-
+    
     @staticmethod
     def create_temp_molfile(mol: Chem.Mol) -> Optional[str]:
         """Create temporary molfile from RDKit Mol object."""
@@ -58,20 +59,20 @@ class ChemistryUtils:
             mol_block = Chem.MolToMolBlock(mol)
             if not mol_block:
                 return None
-
+            
             temp_file = tempfile.NamedTemporaryFile(
-                mode='w',
-                suffix='.mol',
+                mode='w', 
+                suffix='.mol', 
                 delete=False
             )
             temp_file.write(mol_block)
             temp_file.close()
-
+            
             return temp_file.name
         except Exception:
             logger.exception("Failed to create temporary molfile")
             return None
-
+    
     @staticmethod
     def cleanup_temp_file(file_path: str) -> None:
         """Safely remove temporary file."""
@@ -80,12 +81,12 @@ class ChemistryUtils:
                 os.unlink(file_path)
         except OSError:
             logger.warning("Failed to remove temporary file: %s", file_path)
-
+    
     @staticmethod
     def standardise_molecule_pipeline(molfile_path: str) -> Dict[str, Any]:
         """
         Complete molecule standardization pipeline.
-
+        
         Returns:
             Dictionary with standardization results
         """
@@ -98,40 +99,41 @@ class ChemistryUtils:
             'is_wildcard': False,
             'error': None
         }
-
+        
         try:
             # Check if file exists
             if not os.path.exists(molfile_path):
                 result['error'] = 'file_not_found'
                 return result
-
+            
             # Check for wildcards
             result['is_wildcard'] = ChemistryUtils.is_wildcard(molfile_path)
             if result['is_wildcard']:
                 result['error'] = 'contains_wildcards'
                 return result
-
+            
             # Detect charge
             result['charge'] = ChemistryUtils.detect_charge(molfile_path)
-
+            
             # Generate formula
             result['formula'] = ChemistryUtils.generate_formula_from_file(molfile_path)
-
+            
             # Generate InChIKey
             result['inchikey'] = ChemistryOperations.generate_inchikey_from_file(molfile_path)
-
+            
             # Canonicalize to SMILES (this would use OpenBabel)
+            from .openbabel import OpenBabelOperations
             result['smiles'] = OpenBabelOperations.canonicalize_molfile(molfile_path)
-
+            
             if not result['smiles']:
                 result['error'] = 'canonicalization_failed'
-
+            
         except Exception as e:
             logger.exception("Standardization pipeline failed for: %s", molfile_path)
             result['error'] = f'pipeline_error: {str(e)}'
-
+        
         return result
-
+    
     @staticmethod
     def validate_molecule_data(
         smiles: Optional[str] = None,
@@ -146,7 +148,7 @@ class ChemistryUtils:
             'smiles_valid': False,
             'inchikey_valid': False
         }
-
+        
         # Validate SMILES
         if validation['has_smiles']:
             try:
@@ -154,26 +156,26 @@ class ChemistryUtils:
                 validation['smiles_valid'] = mol is not None
             except Exception:
                 validation['smiles_valid'] = False
-
+        
         # Validate InChIKey format (basic check)
         if validation['has_inchikey']:
             # InChIKey should be 27 characters with a dash at position 14
             validation['inchikey_valid'] = (
-                len(inchikey) == 27 and
+                len(inchikey) == 27 and 
                 inchikey[14] == '-' and
                 all(c.isalnum() or c == '-' for c in inchikey)
             )
-
+        
         return validation
-
+    
     @staticmethod
     def normalise_rmsd(rmsd_result: Union[float, Dict[str, Any], None]) -> Tuple[Optional[float], Optional[str]]:
         """
         Normalize RMSD values from alignment operations.
-
+        
         Args:
             rmsd_result: Raw RMSD result from alignment (float, dict, or None)
-
+            
         Returns:
             Tuple of (normalized_rmsd, error_message)
             If successful: (float_value, None)

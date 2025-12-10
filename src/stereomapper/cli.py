@@ -82,8 +82,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="Relate new structures with those already in the cache.",
     )
 
-    # Performance and processing configuration
-    performance_group = run_p.add_argument_group('Performance Options')
+    performance_group = run_p.add_argument_group("Performance Options")
     performance_group.add_argument(
         "--chunk-size",
         type=int,
@@ -109,8 +108,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="Include detailed error information in output.",
     )
 
-    # Debug and development options
-    debug_group = run_p.add_argument_group('Debug Options')
+    debug_group = run_p.add_argument_group("Debug Options")
     debug_group.add_argument(
         "--debug",
         action="store_true",
@@ -148,7 +146,6 @@ def main() -> None:
         settings = configure_from_cli(args)
         set_settings(settings)
 
-        # Set up logging based on configuration
         log_level = "DEBUG" if settings.debug_mode else "WARNING"
         logger, _ = setup_logging(
             log_dir=str(settings.logging.file_path.parent)
@@ -158,34 +155,31 @@ def main() -> None:
             level=log_level,
         )
 
-
         if settings.debug_mode:
             logger.info("Configuration loaded successfully")
             logger.debug("Configuration details:")
             config_dict = settings.to_dict()
             for section, values in config_dict.items():
-                logger.debug("%s: %s",
-                             section, values)
+                logger.debug("  %s: %s", section, values)
 
-        # Collect input files using your existing logic
         inputs = _collect_input_files(args, logger)
 
-        # Update settings with collected inputs
         if args.input:
             settings.input_files = [Path(f) for f in inputs]
         else:
             settings.input_directory = Path(args.input_dir)
 
-        # Ensure the output directory exists
         out_path = Path(args.sqlite_output)
         out_path.parent.mkdir(parents=True, exist_ok=True)
 
-        # Configuration summary
         logger.info("Processing Configuration:")
         logger.info("  Input files: %s", len(inputs))
-        logger.info("  Chunk size: %s", settings.processing.chunk_size)
+        logger.info("  Chunk size: %s", f"{settings.processing.chunk_size:,}")
         logger.info("  Max workers: %s", settings.processing.max_workers)
-        logger.info("  Cache: %s", 'Fresh' if settings.database.fresh_cache else 'Existing')
+        logger.info(
+            "  Cache: %s",
+            "Fresh" if settings.database.fresh_cache else "Existing",
+        )
         logger.info("  Output: %s", out_path)
 
         if settings.dry_run:
@@ -197,13 +191,11 @@ def main() -> None:
         cfg = PipelineConfig.from_settings(
             settings,
             inputs=inputs,
-            output_path=str(out_path)
+            output_path=str(out_path),
         )
 
-        # Run the pipeline with existing function
         res = run_mol_distance_2D_batch(cfg)
 
-        # Success summary
         logger.info("Pipeline completed successfully!")
         logger.info("Results summary:")
         logger.info("  Processed: %s inputs", res.n_inputs)
@@ -212,7 +204,6 @@ def main() -> None:
         logger.info("  Output: %s", res.output_path or args.sqlite_output)
 
         sys.exit(0)
-
 
     except ConfigurationError as e:
         logging.error("Configuration error: %s", e.message)
@@ -291,7 +282,6 @@ def _collect_inputs_from_dir(dir_path: Path, recursive: bool, logger) -> List[st
     pattern = "**/*" if recursive else "*"
     files = []
 
-
     for ext in (".mol", ".sdf"):
         files.extend(dir_path.glob(f"{pattern}{ext}"))
 
@@ -340,9 +330,8 @@ def _print_dry_run_summary(
     print(f"Namespace:          {settings.namespace}")
     print(f"Relate with cache:  {settings.relate_with_cache}")
     print(f"Debug mode:         {settings.debug_mode}")
-    print("="*60)
+    print("=" * 60)
 
-    # Show first few input files as examples
     if inputs:
         print("Example input files:")
         for i, path in enumerate(inputs[:5]):

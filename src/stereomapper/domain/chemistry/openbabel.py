@@ -4,18 +4,17 @@ import logging
 import subprocess
 import tempfile
 import os
-from pathlib import Path
 from typing import Optional, List, Dict
 from stereomapper.domain.exceptions.validation import (
     CanonicalizationError,
-    PipelineFileNotFoundError
+    FileNotFoundError
 )
 from stereomapper.domain.exceptions.base import ExternalToolError
 logger = logging.getLogger(__name__)
 
 class OpenBabelOperations:
     """Handles OpenBabel operations for molecule standardization."""
-
+    
     @staticmethod
     def canonicalise_molfile(molfile_path: str) -> Optional[str]:
         """
@@ -26,116 +25,102 @@ class OpenBabelOperations:
         if not isinstance(molfile_path, str):
             logger.error(f"Invalid input type for molfile_path: {type(molfile_path)}")
             return None
-
+        
         if not os.path.isfile(molfile_path):
             # File not found is a fatal error - raise exception
-            raise PipelineFileNotFoundError(molfile_path)
-
+            raise FileNotFoundError(molfile_path)
+        
         if not OpenBabelOperations.is_obabel_available():
-            # Tool not available is a fatal error - raise exception
-            ex = ExternalToolError(
-                "OpenBabel is not available in the system",
-                tool_name="OpenBabel",
-                command="obabel"
-            ).add_suggestion("Install OpenBabel and ensure 'obabel' command is in PATH")
-            raise ex
-
-        try:
+                # Tool not available is a fatal error - raise exception
+                ex = ExternalToolError(
+                    "OpenBabel is not available in the system",
+                    tool_name="OpenBabel",
+                    command="obabel"
+                ).add_suggestion("Install OpenBabel and ensure 'obabel' command is in PATH")
+                raise ex
+        
+        try:                
             # Run OpenBabel command - keeping your exact subprocess call
             result = subprocess.run(['obabel', molfile_path, '-osmi', '-xI', '-xN'],
                                 capture_output=True, text=True, check=True)
-
+            
             if result.returncode != 0:
                 # Canonicalization failure is a processing error - log and return None
                 error_msg = result.stderr.strip() if result.stderr else "Unknown OpenBabel error"
                 logger.warning(f"OpenBabel canonicalization failed for {molfile_path}: {error_msg}")
                 return None
-
+            
             # Extract SMILES from output
             output = result.stdout.strip()
             if not output:
                 logger.warning(f"OpenBabel returned empty output for {molfile_path}")
                 return None
-
+            
             # Better parsing - handle different output formats
             lines = output.split('\n')
             if not lines:
                 logger.warning(f"OpenBabel returned no valid lines for {molfile_path}")
                 return None
-
+            
             # Take the first non-empty line and extract SMILES
             smiles_line = lines[0].strip()
             if not smiles_line:
                 logger.warning(f"OpenBabel returned empty first line for {molfile_path}")
                 return None
-
+            
             # Extract SMILES (first part before any whitespace or tab)
             smiles_parts = smiles_line.split()
             if not smiles_parts:
                 logger.warning(f"Could not extract SMILES from OpenBabel output for {molfile_path}: {output}")
                 return None
-
+            
             smiles = smiles_parts[0]
-
+            
             # Validate the SMILES doesn't look like a path or error message
             if smiles.startswith('/') or 'tmp' in smiles or len(smiles) < 2:
                 logger.warning(f"OpenBabel returned invalid SMILES for {molfile_path}: {smiles}")
                 return None
-
+            
             return smiles
-
+            
         except subprocess.TimeoutExpired:
             # Timeout is a processing error - log and return None
             logger.warning(f"OpenBabel canonicalization timed out for {molfile_path}")
             return None
-
+            
         except subprocess.CalledProcessError as e:
             # Process failure is a processing error - log and return None
             logger.warning(f"OpenBabel process failed for {molfile_path} with exit code {e.returncode}")
             return None
-
+            
+        # except (FileNotFoundError, ExternalToolError):
+        #     # Re-raise fatal errors
+        #     raise
+            
         except Exception as e:
             # Unexpected errors are processing errors - log and return None
             logger.warning(f"Unexpected error during OpenBabel canonicalization for {molfile_path}: {str(e)}")
             return None
-
+    
     @staticmethod
     def canonicalise_molfiles_batch(molfile_paths: List[str]) -> Dict[str, Optional[str]]:
-        """Batch canonicalize multiple molfiles using OpenBabel.
-        
-        Args:
-            molfile_paths: List of paths to molfiles. Paths will be normalized internally.
-            
-        Returns:
-            Dictionary mapping normalized paths to canonical SMILES (or None if failed).
-        """
+        """Batch canonicalize multiple molfiles using OpenBabel."""
         if not molfile_paths:
             return {}
 
         results: Dict[str, Optional[str]] = {}
         valid_paths: List[str] = []
 
-        # --- 1. Validate and normalize paths safely ---
+        # --- 1. Validate paths safely ---
         for path in molfile_paths:
             try:
-                # Normalize path to absolute resolved path for consistency
-                # Even if input is already normalized, this is idempotent
-                normalized_path = str(Path(path).expanduser().resolve())
-                
-                if not os.path.isfile(normalized_path):
-                    # Store with normalized path for consistency
-                    results[normalized_path] = None
+                if not os.path.isfile(path):
+                    results[path] = None
                     logger.warning(f"File not found in batch: {path}")
                 else:
-                    valid_paths.append(normalized_path)
+                    valid_paths.append(path)
             except Exception as e:
-                # On error, still try to normalize for consistent key
-                try:
-                    normalized_path = str(Path(path).expanduser().resolve())
-                    results[normalized_path] = None
-                except:
-                    # If even normalization fails, use original path
-                    results[path] = None
+                results[path] = None
                 logger.error(f"Error validating path {path}: {e}")
 
         if not valid_paths:
@@ -174,8 +159,7 @@ class OpenBabelOperations:
 
                 if result.returncode != 0:
                     error_msg = result.stderr.strip() or "Unknown batch error"
-                    logger.warning(f"OpenBabel batch processing failed (returncode={result.returncode}): {error_msg}")
-                    logger.debug(f"Failed batch size: {len(subpaths)}, first file: {subpaths[0] if subpaths else 'N/A'}")
+                    logger.warning(f"OpenBabel batch processing failed: {error_msg}")
                     # Fall back to per-file canonicalization
                     individual_results = OpenBabelOperations._fallback_individual_processing(subpaths)
                     results.update(individual_results)
@@ -188,7 +172,6 @@ class OpenBabelOperations:
                 for path, line in zip(subpaths, output_lines):
                     parts = line.split('\t') if '\t' in line else line.split()
                     smiles = parts[0].strip() if parts else None
-                    # Store with normalized path for consistent lookup
                     results[path] = smiles or None
 
                 # Any missing outputs -> None
@@ -215,22 +198,22 @@ class OpenBabelOperations:
 
         logger.debug(f"Canonicalization complete: {len(results)} total entries.")
         return results
-
+    
     @staticmethod
     def _fallback_individual_processing(molfile_paths: List[str]) -> Dict[str, Optional[str]]:
         """Fallback to individual processing if batch fails."""
         logger.info("Falling back to individual OpenBabel processing")
         results = {}
-
+        
         for path in molfile_paths:
             try:
                 results[path] = OpenBabelOperations.canonicalise_molfile(path)
             except Exception as e:
                 logger.error(f"Individual processing failed for {path}: {e}")
                 results[path] = None
-
+        
         return results
-
+    
     @staticmethod
     def is_obabel_available() -> bool:
         """Check if OpenBabel is available in the system."""
@@ -245,7 +228,7 @@ class OpenBabelOperations:
             return result.returncode == 0
         except Exception:
             return False
-
+    
     @staticmethod
     def get_obabel_version() -> Optional[str]:
         """Get OpenBabel version string."""
@@ -262,4 +245,3 @@ class OpenBabelOperations:
             return None
         except Exception:
             return None
-        

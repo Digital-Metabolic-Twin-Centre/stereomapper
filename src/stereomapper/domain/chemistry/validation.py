@@ -1,12 +1,15 @@
 """Chemistry validation operations."""
 
 import re
+import logging
 from typing import Optional
 from pathlib import Path
 from rdkit import Chem
-from stereomapper.utils.logging import setup_logging
 from .analysis import StereoAnalyser
+from stereomapper.utils.suppress import setup_clean_logging
+from stereomapper.utils.logging import setup_logging
 
+setup_clean_logging()
 
 logger, summary_logger = setup_logging(
     console=True,
@@ -22,7 +25,7 @@ QUERYLIKE_SYMBOLS = {"*", "R", "R#"}
 
 class ChemistryValidator:
     """Chemistry validation and detection operations."""
-
+    
     @staticmethod
     def detect_charge_from_molfile(molfile_path: str) -> Optional[int]:
         """Detect formal charge from molfile using RDKit."""
@@ -44,7 +47,7 @@ class ChemistryValidator:
         if not isinstance(molfile_path, str):
             logger.error("Invalid molfile path: %s", molfile_path)
             raise ValueError("Input must be a valid molfile path as a string.")
-
+        
         total_charge = 0
         try:
             with open(molfile_path, 'r') as f:
@@ -117,7 +120,7 @@ class ChemistryValidator:
                     except ValueError:
                         parts = counts.split()
                         atom_count = int(parts[0]) if parts else 0
-
+                    
                     atom_start = 4
                     atom_end = min(atom_start + atom_count, len(lines))
                     for i in range(atom_start, atom_end):
@@ -160,22 +163,22 @@ class ChemistryValidator:
         except Exception:
             logger.exception("Error reading molfile %s", molfile_path)
             return True
-
+        
     @staticmethod
     def is_radioactive(mol: Chem.Mol) -> bool:
         """
         Check if a molecule contains radioactive atoms.
-
+        
         Parameters:
         mol (rdkit.Chem.Mol): The molecule to check.
-
+        
         Returns:
         bool: True if the molecule contains radioactive atoms, False otherwise.
         """
-
+        
         if not isinstance(mol, Chem.Mol):
             raise ValueError("Input must be an RDKit Mol object.")
-
+        
         if mol:
             for atom in mol.GetAtoms():
                 # prevent bug associated with dummy atoms i.e "R1" etc..
@@ -189,11 +192,11 @@ class ChemistryValidator:
     def is_stereo_disagreement(orig_mol: Chem.Mol, tmp_mol: Chem.Mol) -> bool:
         """
         Check if there is a stereochemistry discrepancy between two molecules.
-
+        
         Parameters:
         mol1 (rdkit.Chem.Mol): The first molecule.
         mol2 (rdkit.Chem.Mol): The second molecule.
-
+        
         Returns:
         bool: True if there is a stereochemistry discrepancy, False otherwise.
         """
@@ -201,7 +204,7 @@ class ChemistryValidator:
             if orig_mol is None or tmp_mol is None:
                 summary_logger.debug("[is_stereo_disagreement] One of the molecules is None.")
                 return False
-
+    
             # use compare_stereo_elements to get counts
             stereo_comparison = StereoAnalyser.compare_stereo_elements(orig_mol, tmp_mol)
             # check if there are any unspecified centers or missing centers
@@ -221,7 +224,7 @@ class ChemistryValidator:
         except Exception as e:
             logger.exception(f"Error in check_stereo_discrepancy: {e}")
             return 'orig'
-
+    
     @staticmethod
     def is_SRU(ctfile_path: str | Path) -> bool:
         """
@@ -248,7 +251,7 @@ class ChemistryValidator:
                     sru_ids.add(sgid)
                 except IndexError:
                     pass
-
+        
         #print(sru_ids)
 
         if not sru_ids:
@@ -265,7 +268,7 @@ class ChemistryValidator:
                         return True
 
         return False
-
+    
     @staticmethod
     def is_defined_SRU(ctfile_path: str | Path) -> tuple[bool,int | None]:
         """
@@ -310,7 +313,7 @@ class ChemistryValidator:
                             return True, None # in case of strange formatting
 
         return False, None
-
+    
     @staticmethod
     def normalise_sru_flags(path_or_mol, logger=None, tag="[sru]"):
         """
@@ -352,4 +355,3 @@ class ChemistryValidator:
             logger.debug(f"{tag} has_sru={has_sru} is_def={is_def} is_undef={is_undef} rep={rep!r}")
 
         return has_sru, is_def, is_undef, rep
-    

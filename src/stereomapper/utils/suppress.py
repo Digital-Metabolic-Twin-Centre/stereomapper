@@ -1,21 +1,21 @@
-"""Suprress wordy errors from stereomapper pipeline"""
 import os
 import sys
-from contextlib import contextmanager
 import warnings
+import rdkit
 from rdkit import RDLogger
+from contextlib import contextmanager
 
 def setup_clean_logging():
     """Configure clean logging for pipeline execution"""
-
+    
     # Suppress RDKit warnings
     RDLogger.DisableLog('rdApp.*')
-
+    
     # Suppress Python warnings related to chemistry libraries
     warnings.filterwarnings('ignore', category=UserWarning)
     warnings.filterwarnings('ignore', category=FutureWarning)
     warnings.filterwarnings('ignore', category=DeprecationWarning)
-
+    
     # Suppress specific InChI warnings
     warnings.filterwarnings('ignore', message='.*InChI.*')
 

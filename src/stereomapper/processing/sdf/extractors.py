@@ -1,8 +1,9 @@
-"""Functionality for extracting metabolite identifiers for annotation."""
-import os
+from pathlib import Path
 import re
-from typing import Dict, List, Iterator, Any, Optional, Tuple
 from rdkit import Chem
+from typing import Dict, List, Iterator, Any, Optional, Tuple
+import os
+
 
 def _add(out: List[Tuple[str, str]], namespace: str, local_id: str) -> None:
     """Helper function to add namespace:local_id pairs to output list."""
@@ -42,7 +43,7 @@ def _strip_exts(path: str) -> str:
     name = os.path.basename(path)
     root, ext = os.path.splitext(name)
     if ext.lower() in (".gz", ".bz2", ".xz", ".zip"):
-        root, _ = os.path.splitext(root)
+        root, ext2 = os.path.splitext(root)
         name = root
     # one more pass for .mol / .sdf
     root, ext = os.path.splitext(name)
@@ -64,7 +65,7 @@ class SDFPropertyExtractor:
                 continue  # skip unparseable records
             yield mol.GetPropsAsDict()
 
-
+        
 class CurieExtractor:
     """ Extract and infer identifiers from SDF properties """
 

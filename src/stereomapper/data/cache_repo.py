@@ -1,9 +1,9 @@
-"""Set of functions to apply to the cache database for insertion and updating"""
+# data/cache_repo.py
 import os
 import json
+import hashlib
 import sqlite3
-from pathlib import Path
-from typing import Optional
+from typing import Optional, Dict, Any
 from stereomapper.domain.models import CacheEntry
 
 def get_cached_entry(file_hash: str, conn) -> Optional[CacheEntry]:
@@ -19,11 +19,11 @@ def get_cached_entry(file_hash: str, conn) -> Optional[CacheEntry]:
     row = cur.fetchone()
     if row is None:
         return None
-
+    
     # Get column names from cursor description
     col_names = [desc[0] for desc in cur.description]
     row_dict = dict(zip(col_names, row))
-
+    
     # Convert to CacheEntry object
     return CacheEntry(
         molecule_id=row_dict["molecule_id"],
@@ -46,7 +46,8 @@ def inchi_first_by_id(conn, molfile_list, logger=None):
     if not paths:
         return []
 
-    def _norm(p):
+    from pathlib import Path
+    def _norm(p): 
         try: return str(Path(p).expanduser().resolve())
         except Exception: return os.path.abspath(p)
     paths = [_norm(p) for p in paths]

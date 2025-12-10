@@ -31,7 +31,7 @@ class ProcessingSettings:
     timeout_seconds: int = 300
     retry_attempts: int = 3
     enable_cache: bool = True
-
+    
     def validate(self) -> None:
         """Validate processing settings."""
         if self.chunk_size <= 0:
@@ -39,14 +39,14 @@ class ProcessingSettings:
                 "chunk_size must be positive",
                 config_field="processing.chunk_size"
             )
-
+        
         if self.max_workers <= 0:
             raise ConfigurationError(
                 "max_workers must be positive",
                 config_field="processing.max_workers"
             )
 
-@dataclass
+@dataclass 
 class DatabaseSettings:
     """Database-related configuration."""
     cache_path: Optional[Path] = None
@@ -54,11 +54,11 @@ class DatabaseSettings:
     fresh_cache: bool = False
     pragma_settings: Dict[str, Any] = field(default_factory=lambda: {
         "journal_mode": "WAL",
-        "synchronous": "NORMAL",
+        "synchronous": "NORMAL", 
         "cache_size": -64000,  # 64MB
         "temp_store": "MEMORY"
     })
-
+    
     def validate(self) -> None:
         """Validate database settings."""
         if self.cache_path and not self.cache_path.parent.exists():
@@ -66,11 +66,11 @@ class DatabaseSettings:
                 f"Cache directory does not exist: {self.cache_path.parent}",
                 config_field="database.cache_path"
             ).add_suggestion("Create the directory or use a different path")
-
+        
         if self.output_path and not self.output_path.parent.exists():
             raise ConfigurationError(
                 f"Output directory does not exist: {self.output_path.parent}",
-                config_field="database.output_path"
+                config_field="database.output_path" 
             ).add_suggestion("Create the directory or use a different path")
 
 @dataclass
@@ -83,7 +83,7 @@ class ChemistrySettings:
     canonicalization_tool: str = "openbabel"  # "openbabel" or "rdkit"
     alignment_timeout: int = 30
     rmsd_threshold: float = 0.5
-
+    
     def validate(self) -> None:
         """Validate chemistry settings."""
         valid_tools = {"openbabel", "rdkit"}
@@ -92,13 +92,13 @@ class ChemistrySettings:
                 f"Invalid canonicalization tool: {self.canonicalization_tool}",
                 config_field="chemistry.canonicalization_tool"
             ).add_suggestion(f"Use one of: {valid_tools}")
-
+        
         if self.rmsd_threshold < 0:
             raise ConfigurationError(
                 "RMSD threshold must be non-negative",
                 config_field="chemistry.rmsd_threshold"
             )
-
+        
 @dataclass
 class OutputSettings:
     """Output-related configuration."""
@@ -106,7 +106,7 @@ class OutputSettings:
     include_errors: bool = True
     include_metadata: bool = True
     verbose_errors: bool = False
-
+    
     def validate(self) -> None:
         """Validate output settings."""
         # Always SQLite, no validation needed
@@ -120,7 +120,7 @@ class LoggingSettings:
     console_output: bool = True
     include_timestamps: bool = True
     format_string: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-
+    
     def validate(self) -> None:
         """Validate logging settings."""
         if self.file_path and not self.file_path.parent.exists():
@@ -132,30 +132,30 @@ class LoggingSettings:
 @dataclass
 class Settings:
     """Main configuration settings for stereomapper."""
-
+    
     # Core settings
     processing: ProcessingSettings = field(default_factory=ProcessingSettings)
     database: DatabaseSettings = field(default_factory=DatabaseSettings)
     chemistry: ChemistrySettings = field(default_factory=ChemistrySettings)
     output: OutputSettings = field(default_factory=OutputSettings)
     logging: LoggingSettings = field(default_factory=LoggingSettings)
-
+    
     # Runtime settings
     input_files: List[Path] = field(default_factory=list)
     input_directory: Optional[Path] = None
     namespace: str = "default"
     source_kind: str = "file"
     std_version: int = 1
-
+    
     # Command-specific settings (not in base dataclass)
     relate_with_cache: bool = False
     recursive: bool = False
-
+    
     # Debug/development settings
     debug_mode: bool = False
     profile_performance: bool = False
     dry_run: bool = False
-
+    
     def validate(self) -> None:
         """Validate all configuration settings."""
         try:
@@ -164,47 +164,47 @@ class Settings:
             self.chemistry.validate()
             self.output.validate()
             self.logging.validate()
-
+            
             # Cross-validation
             self._validate_input_sources()
             self._validate_output_compatibility()
-
+            
         except ConfigurationError:
             raise
         except Exception as e:
             raise ConfigurationError(
                 f"Configuration validation failed: {str(e)}"
             ) from e
-
+    
     def _validate_input_sources(self) -> None:
         """Validate input file/directory configuration."""
         has_files = bool(self.input_files)
         has_directory = self.input_directory is not None
-
+        
         if not has_files and not has_directory:
             raise ConfigurationError(
                 "Either input_files or input_directory must be specified",
                 config_field="input_sources"
             ).add_suggestion("Provide --input-dir or specific file paths")
-
+        
         if has_files and has_directory:
             raise ConfigurationError(
                 "Cannot specify both input_files and input_directory",
-                config_field="input_sources"
+                config_field="input_sources" 
             ).add_suggestion("Use either --input-dir OR specific file paths, not both")
-
+        
         if has_directory and not self.input_directory.exists():
             raise ConfigurationError(
                 f"Input directory does not exist: {self.input_directory}",
                 config_field="input_directory"
             )
-
+        
         if has_directory and not self.input_directory.is_dir():
             raise ConfigurationError(
                 f"Input directory path is not a directory: {self.input_directory}",
                 config_field="input_directory"
             )
-
+    
     def _validate_output_compatibility(self) -> None:
         """Validate output format compatibility."""
         # Since we only support SQLite, just check that database path is provided
@@ -213,7 +213,7 @@ class Settings:
                 "SQLite output format requires database.output_path",
                 config_field="database.output_path"
             ).add_suggestion("Provide --sqlite-output path")
-
+        
     def to_dict(self) -> dict:
         """Convert settings to dictionary for debugging."""
         return {
@@ -224,9 +224,7 @@ class Settings:
             },
             'database': {
                 'cache_path': str(self.database.cache_path) if self.database.cache_path else None,
-                'output_path': (
-                    str(self.database.output_path) if self.database.output_path else None
-                    ),
+                'output_path': str(self.database.output_path) if self.database.output_path else None,
                 'fresh_cache': self.database.fresh_cache,
             },
             'output': {
@@ -259,4 +257,3 @@ def set_settings(settings: Settings) -> None:
     settings.validate()  # Validate before setting
     _settings = settings
     logger.info("Configuration loaded and validated successfully")
-    

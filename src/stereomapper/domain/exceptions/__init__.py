@@ -35,7 +35,7 @@ from .processing import (
 from .validation import (
     ValidationError,
     FileValidationError,
-    PipelineFileNotFoundError,
+    FileNotFoundError,
     InvalidFileFormatError,
     ParameterValidationError
 )
@@ -43,33 +43,33 @@ from .validation import (
 __all__ = [
     # Base
     "stereomapperError",
-    "RetryableError",
+    "RetryableError", 
     "ConfigurationError",
     "ResourceError",
     "DatabaseError",
-    "FileSystemError",
+    "FileSystemError", 
     "MemoryError",
     "ExternalToolError",
-
+    
     # Chemistry
     "ChemistryError",
     "MoleculeParsingError",
-    "CanonicalizationError",
+    "CanonicalizationError", 
     "StereoAnalysisError",
     "MoleculeAlignmentError",
     "InvalidMoleculeError",
     "WildcardMoleculeError",
-
+    
     # Processing
     "ProcessingError",
     "BatchProcessingError",
     "CacheError",
     "PipelineConfigurationError",
-
+    
     # Validation
     "ValidationError",
     "FileValidationError",
-    "PipelineFileNotFoundError",
+    "FileNotFoundError",
     "InvalidFileFormatError",
     "ParameterValidationError",
 ]

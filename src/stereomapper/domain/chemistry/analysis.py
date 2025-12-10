@@ -5,21 +5,23 @@ import os
 from typing import Dict, List
 from rdkit import Chem
 from rdkit.Chem import rdmolops
+from stereomapper.utils.suppress import setup_clean_logging
+setup_clean_logging()
 
 logger = logging.getLogger(__name__)
 
 class StereoAnalyser:
     """Handles stereochemistry analysis operations."""
-
+    
     @staticmethod
     def identify_stereogenic_elements(mol_object: Chem.Mol, mol_file: str = "mol1") -> Dict[str, List]:
         """
         Identifies all potential stereogenic elements in a molecule.
-
+        
         Parameters:
             mol_object: RDKit Mol object
             mol_file: Name for the output dictionary key
-
+            
         Returns:
             Dictionary with molecule name as key and list of stereogenic elements as value
         """
@@ -32,13 +34,13 @@ class StereoAnalyser:
         if mol_object is None:
             logger.error(f"Failed to create molecule from molFile: {mol_file}")
             raise ValueError("Failed to create molecule from molFile.")
-
+        
         stereo_info_list = rdmolops.FindPotentialStereo(mol_object, cleanIt=True, flagPossible=False)
 
         if not stereo_info_list:
             logger.debug(f"No stereogenic elements found in {base_name}.")
             return {base_name: []}
-
+        
         inner_data = []
         for info in stereo_info_list:
             stereo_type = str(info.type)
@@ -57,14 +59,14 @@ class StereoAnalyser:
     def compare_stereo_elements(mol_object1: Chem.Mol, mol_object2: Chem.Mol) -> Dict:
         """
         Compares the stereogenic elements between two molecules.
-
+        
         Returns:
             Dictionary with counts of matches, flips, penalties, and unmatched centers
         """
         if not isinstance(mol_object1, Chem.Mol) or not isinstance(mol_object2, Chem.Mol):
             logger.error("Both inputs must be RDKit Mol objects.")
             raise ValueError("Both inputs must be RDKit Mol objects.")
-
+        
         # Identify all stereogenic elements
         stereo_elements1 = StereoAnalyser.identify_stereogenic_elements(mol_object1)
         stereo_elements2 = StereoAnalyser.identify_stereogenic_elements(mol_object2)
@@ -144,4 +146,3 @@ class StereoAnalyser:
         results["total_stereo"] = results["total_tetra"] + results["total_db"] + results["missing_centres"]
 
         return results
-    

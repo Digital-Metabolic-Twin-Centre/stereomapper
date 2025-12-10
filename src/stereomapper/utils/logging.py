@@ -1,9 +1,9 @@
-"""Logging module setup for stereomapper pipeline"""
+# logger_setup.py
 import logging
 import logging.config
+import os
 from datetime import datetime
 from pathlib import Path
-from stereomapper.utils.suppress import setup_clean_logging
 
 def setup_logging(
     log_dir: str = "./logs",
@@ -14,7 +14,7 @@ def setup_logging(
 ) -> tuple:
     """
     Setup logging with file and optional console handlers.
-
+    
     Args:
         log_dir: Directory for log files
         console: Whether to enable console logging
@@ -22,11 +22,9 @@ def setup_logging(
         quiet_console: If True, only show minimal console output
         console_level: Separate level for console (defaults to level)
     """
-    setup_clean_logging()
-    
     # Define the logger name
     name = "stereomapper"
-
+    
     Path(log_dir).mkdir(parents=True, exist_ok=True)
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
     log_path = str(Path(log_dir) / f"{name}_{ts}.log")
@@ -93,7 +91,7 @@ def setup_logging(
         console_level = console_level or level
         console_handler.setLevel(getattr(logging, console_level.upper()))
         console_handler.setFormatter(console_formatter)
-
+        
         logger.addHandler(console_handler)
         summary_logger.addHandler(console_handler)
     elif console and quiet_console:
@@ -101,7 +99,7 @@ def setup_logging(
         console_handler = logging.StreamHandler()
         console_handler.setLevel(logging.ERROR)
         console_handler.setFormatter(console_formatter)
-
+        
         # Only add to summary logger for important messages
         summary_logger.addHandler(console_handler)
 

@@ -1,6 +1,8 @@
 # data/results_repo.py
-from typing import Iterable, Tuple
+from typing import Iterable, Mapping, Tuple
 from itertools import islice
+import json
+import hashlib
 import sqlite3
 
 def bulk_upsert_clusters(conn: sqlite3.Connection, row_tuples: Iterable[Tuple], chunk_size: int = 2000):
@@ -44,19 +46,6 @@ def fetch_cluster_reps_for_inchikey(results_db_path: str, inchikey_first: str):
     return rows
 
 def preload_processed_pairs(results_db_path, version_tag, cluster_ids):
-    """
-    Function to check if any relationships have already been processed in the 
-    relationships table, if true returns them for faster processing.
-
-    Args:
-    - results_db_path: str, full path to the output database.
-    - version_tag: str, version tag to annotate the version of the pipeline
-      in the database.
-    - cluster_ids: list, list of cluster IDs to be queried.
-
-    Returns:
-    tuple containing any identified rows.
-    """
     a_min, a_max = min(cluster_ids), max(cluster_ids)
     with sqlite3.connect(results_db_path) as R:
         rows = R.execute("""
@@ -68,18 +57,7 @@ def preload_processed_pairs(results_db_path, version_tag, cluster_ids):
         """, (version_tag, a_min, a_max, a_min, a_max)).fetchall()
     return {tuple(row) for row in rows}  # {(a,b), ...}
 
-def load_accession(cache_db_path, smiles_list): 
-    """ 
-    Loads the relevant accession identifiers and SMILES strings as generated
-    by the stereomapper pipeline.
-
-    Args:
-    - cache_db_path: str, full path to the output database.
-    - smiles_list: list, list of SMILES to use in the query
-
-    Returns:
-    - out: dict, containing smiles mapped to aaccession identifiers.
-    """
+def load_accession(cache_db_path, smiles_list): # needs to be changed to use accession_curie
     if not smiles_list:
         return {}
     placeholders = ",".join(["?"] * len(smiles_list))
@@ -96,14 +74,6 @@ def load_accession(cache_db_path, smiles_list):
 
 
 def preload_cluster_sru(results_db_path, cluster_ids):
-    """
-    Preloads the SRU data from the clusters database table for use 
-    in making relationship assignments.
-
-    Args:
-    - results_db_path: str, full path to the output database.
-    - cluster_ids: list, set of cluster IDs to be queried for.
-    """
     if not cluster_ids:
         return {}
     placeholders = ",".join(["?"] * len(cluster_ids))
@@ -125,13 +95,6 @@ def preload_cluster_sru(results_db_path, cluster_ids):
 
 
 def batch_insert_cluster_pairs(results_db_path, rows):
-    """
-    Batch insert a set of results in the relationships table.
-
-    Args:
-    - results_db_path: str, full path to the output database.
-    - rows: relevant rows obtained from the relevant cache database
-    """
     if not rows:
         return
     with sqlite3.connect(results_db_path) as R:
