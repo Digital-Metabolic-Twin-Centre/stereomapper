@@ -344,7 +344,7 @@ class TestRelationshipAnalyser:
         
         result = analyser.calc_relationship(mock_mol1, mock_mol2, **basic_params)
         
-        assert result.classification == "Parent-child"
+        assert result.classification == "Stereo-resolution pairs"
         assert result.rmsd == 0.3
 
     @patch('stereomapper.classification.engine.StereoAnalyser.compare_stereo_elements')
