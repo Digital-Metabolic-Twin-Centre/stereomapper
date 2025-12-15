@@ -80,7 +80,17 @@ conda activate stereomapper
 pip install .
 ```
 
-### Option B: uv
+### Option B: Python
+```bash
+# create env
+python -m venv .stereomapper
+source .stereomapper/bin/activate
+
+# now install from source
+pip install . 
+```
+
+### Option C: uv
 
 For this option, ensure you have `uv` installed on your machine. If not download and install from the following: [uv](https://docs.astral.sh/uv/getting-started/installation/).
 
@@ -177,12 +187,12 @@ WHERE classification = 'Enantiomers' and confidence >= 90
 LIMIT 50;
 ```
 
-## Citation 
-If you use StereoMapper in your work, please cite the following:
+## Paper 
+The pre-print of the paper can be found in bioRxiv at the following DOI:
 
 ```
-McGoldrick J. et al. StereoMapper: A stereochemistry-aware metabolite mapping framework for biochemical databases. 2025.
-[DOI or preprint link here]
+McGoldrick J. et al. StereoMapper: Clarifying Metabolite Identity Through Stereochemically Aware Relationship Assignment. 2025.
+[https://doi.org/10.64898/2025.12.09.693222]
 ```
 
 ## Contact
