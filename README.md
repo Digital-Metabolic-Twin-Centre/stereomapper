@@ -185,6 +185,12 @@ SELECT *
 FROM relationships
 WHERE classification = 'Enantiomers' and confidence >= 90
 LIMIT 50;
+
+-- Check which clusters contain more than one member (considered duplicates if testing on single database)
+SELECT *
+FROM clusters
+WHERE member_count > 1 
+ORDER BY COUNT(*) DESC;
 ```
 
 ## Paper 
