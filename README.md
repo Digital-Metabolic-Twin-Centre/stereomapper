@@ -196,10 +196,7 @@ ORDER BY COUNT(*) DESC;
 ## Paper 
 The pre-print of the paper can be found in bioRxiv at the following DOI:
 
-```
-McGoldrick J. et al. StereoMapper: Clarifying Metabolite Identity Through Stereochemically Aware Relationship Assignment. 2025.
-[https://doi.org/10.64898/2025.12.09.693222]
-```
+[McGoldrick J. et al. StereoMapper: Clarifying Metabolite Identity Through Stereochemically Aware Relationship Assignment. 2025.](https://doi.org/10.64898/2025.12.09.693222)
 
 ## Contact
 
