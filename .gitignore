@@ -57,3 +57,5 @@ results_*.sqlite
 old/
 logs/
 uv.lock
+env_stereomapper/
+.venv/
