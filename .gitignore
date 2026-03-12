@@ -9,3 +9,4 @@ build/
 .env
 uv.lock
 env_stereomapper/
+.venv/
