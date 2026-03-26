@@ -4,16 +4,14 @@ import argparse
 import logging
 import sys
 from pathlib import Path
-from typing import List
 
-from stereomapper.config.loader import configure_from_cli
-from stereomapper.config.settings import set_settings, get_settings
 from stereomapper.config.integration import PipelineConfig
-from stereomapper.domain.exceptions import ConfigurationError
-
-from stereomapper.utils.logging import setup_logging
+from stereomapper.config.loader import configure_from_cli
+from stereomapper.config.settings import get_settings, set_settings
 from stereomapper.domain.chemistry.validation import ChemistryValidator
-from stereomapper.runners.pipeline import run_mol_distance_2D_batch
+from stereomapper.domain.exceptions import ConfigurationError
+from stereomapper.runners.pipeline import run_mol_distance_2d_batch
+from stereomapper.utils.logging import setup_logging
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -41,8 +39,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--input-dir",
         type=str,
         help=(
-            "Directory containing input molfiles. Processes *.mol/*.sdf "
-            "(optionally recursive)."
+            "Directory containing input molfiles. Processes *.mol/*.sdf " "(optionally recursive)."
         ),
     )
 
@@ -148,9 +145,9 @@ def main() -> None:
 
         log_level = "DEBUG" if settings.debug_mode else "WARNING"
         logger, _ = setup_logging(
-            log_dir=str(settings.logging.file_path.parent)
-            if settings.logging.file_path
-            else "./logs",
+            log_dir=(
+                str(settings.logging.file_path.parent) if settings.logging.file_path else "./logs"
+            ),
             console=settings.logging.console_output,
             level=log_level,
         )
@@ -194,7 +191,7 @@ def main() -> None:
             output_path=str(out_path),
         )
 
-        res = run_mol_distance_2D_batch(cfg)
+        res = run_mol_distance_2d_batch(cfg)
 
         logger.info("Pipeline completed successfully!")
         logger.info("Results summary:")
@@ -224,7 +221,7 @@ def main() -> None:
         sys.exit(1)
 
 
-def _collect_input_files(args, logger) -> List[str]:
+def _collect_input_files(args, logger) -> list[str]:
     """Collect input files from CLI arguments."""
     if args.input:
         inputs = []
@@ -247,10 +244,7 @@ def _collect_input_files(args, logger) -> List[str]:
                 "No valid input files found in --input",
                 config_field="input",
             ).add_suggestion(
-                (
-                    "Check that the specified files exist and use "
-                    ".mol or .sdf extensions"
-                )
+                "Check that the specified files exist and use " ".mol or .sdf extensions"
             )
 
         return inputs
@@ -262,14 +256,9 @@ def _collect_input_files(args, logger) -> List[str]:
             config_field="input_dir",
         )
 
-    inputs = _collect_inputs_from_dir(
-        dir_path, recursive=args.recursive, logger=logger
-    )
+    inputs = _collect_inputs_from_dir(dir_path, recursive=args.recursive, logger=logger)
     if not inputs:
-        msg = (
-            f"No .mol/.sdf files found in {dir_path}"
-            f"{'(recursive)' if args.recursive else ''}"
-        )
+        msg = f"No .mol/.sdf files found in {dir_path}" f"{'(recursive)' if args.recursive else ''}"
         raise ConfigurationError(msg, config_field="input_dir").add_suggestion(
             "Check the directory path and file extensions"
         )
@@ -277,7 +266,7 @@ def _collect_input_files(args, logger) -> List[str]:
     return inputs
 
 
-def _collect_inputs_from_dir(dir_path: Path, recursive: bool, logger) -> List[str]:
+def _collect_inputs_from_dir(dir_path: Path, recursive: bool, logger) -> list[str]:
     """Collect .mol and .sdf files from a directory."""
     pattern = "**/*" if recursive else "*"
     files = []
@@ -285,9 +274,7 @@ def _collect_inputs_from_dir(dir_path: Path, recursive: bool, logger) -> List[st
     for ext in (".mol", ".sdf"):
         files.extend(dir_path.glob(f"{pattern}{ext}"))
 
-    uniq_sorted = sorted(
-        {str(p.resolve()) for p in files if p.is_file()}
-    )
+    uniq_sorted = sorted({str(p.resolve()) for p in files if p.is_file()})
 
     filtered = []
     skipped_wildcard = 0
@@ -307,16 +294,12 @@ def _collect_inputs_from_dir(dir_path: Path, recursive: bool, logger) -> List[st
     if skipped_wildcard > 0:
         logger.info("Skipped %s wildcard molecules", skipped_wildcard)
     if skipped_errors > 0:
-        logger.warning(
-            "Skipped %s files due to validation errors", skipped_errors
-        )
+        logger.warning("Skipped %s files due to validation errors", skipped_errors)
 
     return filtered
 
 
-def _print_dry_run_summary(
-    settings, inputs: List[str], output_path: Path
-) -> None:
+def _print_dry_run_summary(settings, inputs: list[str], output_path: Path) -> None:
     """Print a summary for dry run mode."""
     print("\n" + "=" * 60)
     print("DRY RUN SUMMARY")

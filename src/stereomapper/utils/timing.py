@@ -1,10 +1,13 @@
 # timing.py
-import logging, time
+import logging
+import time
 from contextlib import contextmanager
 from functools import wraps
 
+
 def _now():
     return time.perf_counter()
+
 
 @contextmanager
 def section_timer(name: str, logger: logging.Logger):
@@ -15,9 +18,11 @@ def section_timer(name: str, logger: logging.Logger):
         dt = _now() - t0
         logger.info("TIMER %s took %.3f s", name, dt)
 
+
 def timeit(logger: logging.Logger, name: str | None = None):
     def deco(fn):
         label = name or fn.__qualname__
+
         @wraps(fn)
         def wrapper(*args, **kwargs):
             t0 = _now()
@@ -26,5 +31,7 @@ def timeit(logger: logging.Logger, name: str | None = None):
             finally:
                 dt = _now() - t0
                 logger.info("TIMER %s took %.3f s", label, dt)
+
         return wrapper
+
     return deco

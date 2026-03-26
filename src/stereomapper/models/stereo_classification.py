@@ -1,9 +1,11 @@
 """ Specifies the Class for Stereo Classification """
 
-from dataclasses import dataclass, asdict
-from typing import List, Dict, Optional, Any, Literal
+from dataclasses import asdict, dataclass
+from enum import Enum
+from typing import Any, Literal, Optional
+
 import numpy as np
-from enum import Enum 
+
 
 class StereoClass(Enum):
     IDENTICAL = "Identical structures"
@@ -16,19 +18,22 @@ class StereoClass(Enum):
     NO_CLASSIFICATION = "Unclassified"
     UNRESOLVED = "Unresolved"
 
+
 RelBin = Literal["high", "medium", "low", "very_low"]
+
 
 @dataclass
 class StereoClassification:
     """Specify the structure of the stereo classification results."""
-    classification: str                       # e.g. StereoClass.ENANTIOMERS.value
+
+    classification: str  # e.g. StereoClass.ENANTIOMERS.value
     rmsd: Optional[float]
-    details: Dict[str, Any]
+    details: dict[str, Any]
 
     # New: confidence (all optional for backward-compat)
-    confidence_score: Optional[int] = None    # 0..100
+    confidence_score: Optional[int] = None  # 0..100
     confidence_bin: Optional[RelBin] = None
-    confidence: Optional[Dict[str, Any]] = None
+    confidence: Optional[dict[str, Any]] = None
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -36,15 +41,16 @@ class StereoClassification:
     # -------- internal helper to unify inputs --------
     @staticmethod
     def _extract_conf_fields(
-        stereo_score: Optional[float] = None,
-        confidence: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
-        out: Dict[str, Any] = {}
+        stereo_score: Optional[float] = None, confidence: Optional[dict[str, Any]] = None
+    ) -> dict[str, Any]:
+        out: dict[str, Any] = {}
         if confidence:
             # prefer full dict if provided
             out["confidence"] = confidence
             # be robust if keys are missing
-            out["confidence_score"] = int(confidence.get("score")) if confidence.get("score") is not None else None
+            out["confidence_score"] = (
+                int(confidence.get("score")) if confidence.get("score") is not None else None
+            )
             out["confidence_bin"] = confidence.get("bin")
         elif stereo_score is not None:
             # headline only (legacy path)
@@ -52,7 +58,7 @@ class StereoClassification:
             out["confidence_bin"] = None
             out["confidence"] = None
         return out
-    
+
     # -------- base factory with confidence plumbing --------
     @classmethod
     def _base(
@@ -60,10 +66,10 @@ class StereoClassification:
         *,
         classification: "StereoClass",
         rmsd: Optional[float],
-        details: Optional[Dict[str, Any]] = None,
-        stereo_score: Optional[float] = None,             # headline score (optional)
-        confidence: Optional[Dict[str, Any]] = None,      # full breakdown (optional)
-        **counts
+        details: Optional[dict[str, Any]] = None,
+        stereo_score: Optional[float] = None,  # headline score (optional)
+        confidence: Optional[dict[str, Any]] = None,  # full breakdown (optional)
+        **counts,
     ) -> "StereoClassification":
         defaults = dict(
             num_stereogenic_elements=0,
@@ -91,64 +97,60 @@ class StereoClassification:
     @classmethod
     def identical(cls, **kwargs) -> "StereoClassification":
         return cls._base(classification=StereoClass.IDENTICAL, **kwargs)
-    
+
     @classmethod
     def unresolved(cls, **kwargs) -> "StereoClassification":
         return cls._base(classification=StereoClass.UNRESOLVED, **kwargs)
-    
+
     @classmethod
     def identical_missing_charge(cls, **kwargs) -> "StereoClassification":
         return cls._base(classification=StereoClass.IDENTICAL_MISSING_CHARGE, **kwargs)
-        
-    
+
     @classmethod
     def protomers(cls, **kwargs) -> "StereoClassification":
         return cls._base(classification=StereoClass.PROTOMERS, **kwargs)
-    
+
     ## --------------- Class Methods for Stereoisomeric Structures --------------- ##
     #################################################################################
-    
+
     @classmethod
     def enantiomers(cls, **kwargs) -> "StereoClassification":
         """Accepts stereo_score=int|float and/or confidence=dict."""
         return cls._base(classification=StereoClass.ENANTIOMERS, **kwargs)
-    
+
     @classmethod
     def diastereomers(cls, **kwargs) -> "StereoClassification":
         return cls._base(classification=StereoClass.DIASTEREOMERS, **kwargs)
-    
+
     @classmethod
     def putative_structures(cls, **kwargs) -> "StereoClassification":
         return cls._base(classification=StereoClass.PUTATIVE, **kwargs)
-    
+
         ## --------------- Class Methods for Ambiguous/Undefined Structures --------------- ##
         #####################################################################################
-    
+
     @classmethod
     def ambiguous_structures(cls, **kwargs) -> "StereoClassification":
         return cls._base(classification=StereoClass.AMBIGUOUS, **kwargs)
-    
+
         ## --------------- Class Methods for Planar vs Stereo Structures --------------- ##
         #####################################################################################
-    
+
     @classmethod
     def planar_vs_stereo(cls, **kwargs) -> "StereoClassification":
         return cls._base(classification=StereoClass.PLANAR_VS_STEREO, **kwargs)
 
         ## --------------- Class Methods for Indistinguishable Structures --------------- ##
         #####################################################################################
+
     @classmethod
     def indistinguishable_structures(cls, **kwargs) -> "StereoClassification":
         return cls._base(classification=StereoClass.INDISTINGUISHABLE, **kwargs)
 
         ## --------------- Class Methods for No Classification --------------- ##
         #####################################################################################
-    
+
     @classmethod
     def no_classification(cls):
-        """ Return a StereoClassification instance for no classification """
-        return cls._base(
-            classification=StereoClass.NO_CLASSIFICATION,
-            rmsd=np.nan,
-            penalties=[]
-        )
+        """Return a StereoClassification instance for no classification"""
+        return cls._base(classification=StereoClass.NO_CLASSIFICATION, rmsd=np.nan, penalties=[])

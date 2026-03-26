@@ -1,11 +1,7 @@
 """Confidence scoring and classification systems."""
 
 from .confidence import ConfidenceScorer
-from .models import ConfidenceResult
 from .features import FeatureBuilder
+from .models import ConfidenceResult
 
-__all__ = [
-    "ConfidenceScorer",
-    "ConfidenceResult", 
-    "FeatureBuilder"
-]
+__all__ = ["ConfidenceScorer", "ConfidenceResult", "FeatureBuilder"]

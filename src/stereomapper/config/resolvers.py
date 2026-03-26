@@ -1,19 +1,22 @@
 # config/resolvers.py
 from pathlib import Path
-from typing import Optional, Tuple, List
-from stereomapper.data.db import connect
-import os
+from typing import Optional
+
 from platformdirs import user_cache_dir
 
 APP = "stereomapper"
 SCHEMA_VERSION = 1  # increment when schema changes
+
 
 def default_cache_path() -> Path:
     p = Path(user_cache_dir(APP))
     p.mkdir(parents=True, exist_ok=True)
     return p / f"structures-v{SCHEMA_VERSION}.sqlite"
 
-def _resolve_cache_path(*, relate_with_cache: bool, fresh_cache: bool, cache_path: Optional[str]) -> Optional[Path]:
+
+def _resolve_cache_path(
+    *, relate_with_cache: bool, fresh_cache: bool, cache_path: Optional[str]
+) -> Optional[Path]:
     """
     Decide which cache DB we are using for this run:
     - relate_with_cache=True: must open an existing DB (either provided or default).
@@ -41,7 +44,8 @@ def _resolve_cache_path(*, relate_with_cache: bool, fresh_cache: bool, cache_pat
     p = Path(cache_path) if cache_path else default_cache_path()
     return p
 
-def _resolve_inputs_from_cfg(cfg) -> Tuple[str, ...]:
+
+def _resolve_inputs_from_cfg(cfg) -> tuple[str, ...]:
     if cfg.input and cfg.input_dir:
         raise ValueError("Specify either explicit input files or input_dir, not both.")
 
@@ -50,7 +54,7 @@ def _resolve_inputs_from_cfg(cfg) -> Tuple[str, ...]:
         if not base.is_dir():
             raise ValueError(f"--input-dir is not a directory: {base}")
         pattern = "**/*" if cfg.recursive else "*"
-        found: List[Path] = []
+        found: list[Path] = []
         # collect matching files
         for p in base.glob(pattern):
             if p.is_file() and p.suffix.lower() in cfg.extensions:
@@ -70,7 +74,9 @@ def _resolve_inputs_from_cfg(cfg) -> Tuple[str, ...]:
             if not p.is_file():
                 raise ValueError(f"Input file not found: {item}")
             if p.suffix.lower() not in cfg.extensions:
-                raise ValueError(f"Unsupported input extension for {item} (allowed: {cfg.extensions})")
+                raise ValueError(
+                    f"Unsupported input extension for {item} (allowed: {cfg.extensions})"
+                )
             files.append(str(p.resolve()))
         # stable & unique
         return tuple(sorted(set(files)))

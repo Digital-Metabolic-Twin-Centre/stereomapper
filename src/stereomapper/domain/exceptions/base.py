@@ -1,27 +1,28 @@
-from typing import Optional, Dict, Any, List
-from datetime import datetime
-from abc import ABC
 import logging
+from abc import ABC
+from datetime import datetime
+from typing import Any, Optional
 
 logger = logging.getLogger(__name__)
 
-class stereomapperError(Exception, ABC):
+
+class StereomapperError(Exception, ABC):
     """Base exception for all stereomapper-related errors."""
-    
+
     def __init__(
         self,
         message: str,
         *,
         error_code: Optional[str] = None,
-        context: Optional[Dict[str, Any]] = None,
-        suggestions: Optional[List[str]] = None,
-        recoverable: bool = False
+        context: Optional[dict[str, Any]] = None,
+        suggestions: Optional[list[str]] = None,
+        recoverable: bool = False,
     ):
         super().__init__(message)
         self.message = message
         self.error_code = error_code or self._get_default_error_code()
-        self.context: Dict[str, Any] = context or {}
-        self.suggestions: List[str] = suggestions or []
+        self.context: dict[str, Any] = context or {}
+        self.suggestions: list[str] = suggestions or []
         self.recoverable = recoverable
         self.timestamp = datetime.now()
         self.config_field: Optional[str] = None  # to be set when relevant
@@ -48,12 +49,12 @@ class stereomapperError(Exception, ABC):
         return base
 
 
-class RetryableError(stereomapperError):
+class RetryableError(StereomapperError):
     def _get_default_error_code(self) -> str:
         return "RETRYABLE_ERROR"
 
 
-class ConfigurationError(stereomapperError):
+class ConfigurationError(StereomapperError):
     def __init__(self, message: str, *, config_field: str | None = None, **kwargs):
         super().__init__(message, **kwargs)
         self.config_field = config_field
@@ -69,7 +70,8 @@ class ConfigurationError(stereomapperError):
             return f"{base} -- Suggestions: {'; '.join(self.suggestions)}"
         return base
 
-class ResourceError(stereomapperError):
+
+class ResourceError(StereomapperError):
     def _get_default_error_code(self) -> str:
         return "RESOURCE_ERROR"
 
@@ -96,15 +98,16 @@ class ExternalToolError(ResourceError):
         *,
         tool_name: Optional[str] = None,
         command: Optional[str] = None,
-        **kwargs
+        **kwargs,
     ):
         super().__init__(message, **kwargs)
         if tool_name:
-            self.add_context('tool_name', tool_name)
+            self.add_context("tool_name", tool_name)
         if command:
-            self.add_context('command', command)
+            self.add_context("command", command)
         # helpful default suggestion to match tests expecting "Install ..."
         if tool_name:
             self.add_suggestion(f"Install {tool_name} or ensure it is available on PATH")
+
     def _get_default_error_code(self) -> str:
         return "EXTERNAL_TOOL_ERROR"

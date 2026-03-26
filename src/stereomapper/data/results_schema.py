@@ -1,26 +1,29 @@
 # data/results_schema.py
-from pathlib import Path
 import sqlite3
-from typing import Optional
+
 
 def results_schema(con: sqlite3.Connection) -> sqlite3.Connection:
-    """ Create the results database schema if it does not exist. """
+    """Create the results database schema if it does not exist."""
     with con:
         cur = con.cursor()
 
         # Which of the two tables exist?
         have = {
-            row[0] for row in cur.execute("""
+            row[0]
+            for row in cur.execute(
+                """
                 SELECT name FROM sqlite_master
                 WHERE type='table' AND name IN ('clusters','relationships')
-            """).fetchall()
+            """
+            ).fetchall()
         }
 
         need = {"clusters", "relationships"}
 
         if have != need:
             # Drop whatever partial state exists and recreate cleanly
-            cur.executescript("""
+            cur.executescript(
+                """
                 DROP TABLE IF EXISTS relationships;
                 DROP TABLE IF EXISTS clusters;
 
@@ -71,6 +74,7 @@ def results_schema(con: sqlite3.Connection) -> sqlite3.Connection:
                 CREATE INDEX IF NOT EXISTS idx_ic_inchikey ON clusters(inchikey_first);
                 CREATE INDEX IF NOT EXISTS idx_ic_undef_sru ON clusters(is_undef_sru);
                 CREATE INDEX IF NOT EXISTS idx_ic_def_sru ON clusters(is_def_sru, sru_repeat_count);
-                            
-            """)
+
+            """
+            )
             return

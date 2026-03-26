@@ -1,7 +1,8 @@
 """Feature extraction for confidence scoring."""
 
-from .models import ConfidenceResult
 from .confidence import ConfidenceScorer
+from .models import ConfidenceResult
+
 
 class FeatureBuilder:
     """Build features for confidence scoring."""
@@ -25,8 +26,8 @@ class FeatureBuilder:
         ik_protonation_layer_eq=None,
     ) -> ConfidenceResult:
         """Build confidence features from analysis results"""
-        
-        scorer = ConfidenceScorer()     
+
+        scorer = ConfidenceScorer()
 
         return scorer.score(
             assigned_class=assigned_class,

@@ -87,7 +87,7 @@ def test_cluster_rows_merges_defined_and_plain_members():
     assert rep_cnt == 2
     assert member_count == 2
     assert members_json == '["chebi:1", "chebi:2"]'
-    expected_hash = hashlib.sha256("chebi:1\nchebi:2".encode("utf-8")).hexdigest()
+    expected_hash = hashlib.sha256(b"chebi:1\nchebi:2").hexdigest()
     assert members_hash == expected_hash
 
 
@@ -101,9 +101,7 @@ def test_hash_file_returns_md5(tmp_path: Path):
 
 
 def test_make_molecule_key_uses_provided_identifiers():
-    expected = hashlib.blake2b(
-        "1|ABCDEFGHIJKLMN|q=1".encode("utf-8"), digest_size=16
-    ).hexdigest()
+    expected = hashlib.blake2b(b"1|ABCDEFGHIJKLMN|q=1", digest_size=16).hexdigest()
 
     key = assemblers.make_molecule_key(
         std_version="1",

@@ -1,11 +1,12 @@
 # data/results_repo.py
-from typing import Iterable, Mapping, Tuple
-from itertools import islice
-import json
-import hashlib
 import sqlite3
+from collections.abc import Iterable
+from itertools import islice
 
-def bulk_upsert_clusters(conn: sqlite3.Connection, row_tuples: Iterable[Tuple], chunk_size: int = 2000):
+
+def bulk_upsert_clusters(
+    conn: sqlite3.Connection, row_tuples: Iterable[tuple], chunk_size: int = 2000
+):
     """
     row_tuples must be from cluster_rows(). Uses a single transaction.
     """
@@ -36,39 +37,47 @@ def fetch_cluster_reps_for_inchikey(results_db_path: str, inchikey_first: str):
     """
     Returns list of (cluster_id, identity_key_strict, rep_identifier)
     """
-    with sqlite3.connect(results_db_path) as R:
-        rows = R.execute("""
+    with sqlite3.connect(results_db_path) as r:
+        rows = r.execute(
+            """
             SELECT cluster_id, identity_key_strict
             FROM clusters
             WHERE inchikey_first = ?
             ORDER BY cluster_id;
-        """, (inchikey_first,)).fetchall()
+        """,
+            (inchikey_first,),
+        ).fetchall()
     return rows
+
 
 def preload_processed_pairs(results_db_path, version_tag, cluster_ids):
     a_min, a_max = min(cluster_ids), max(cluster_ids)
-    with sqlite3.connect(results_db_path) as R:
-        rows = R.execute("""
+    with sqlite3.connect(results_db_path) as r:
+        rows = r.execute(
+            """
             SELECT cluster_a, cluster_b
             FROM relationships
             WHERE version_tag = ?
               AND cluster_a BETWEEN ? AND ?
               AND cluster_b BETWEEN ? AND ?;
-        """, (version_tag, a_min, a_max, a_min, a_max)).fetchall()
+        """,
+            (version_tag, a_min, a_max, a_min, a_max),
+        ).fetchall()
     return {tuple(row) for row in rows}  # {(a,b), ...}
 
-def load_accession(cache_db_path, smiles_list): # needs to be changed to use accession_curie
+
+def load_accession(cache_db_path, smiles_list):  # needs to be changed to use accession_curie
     if not smiles_list:
         return {}
     placeholders = ",".join(["?"] * len(smiles_list))
     sql = f"""
-    SELECT 
-        str.smiles, 
-        src.accession_curie 
+    SELECT
+        str.smiles,
+        src.accession_curie
     FROM structures WHERE smiles IN ({placeholders})"""
     out = {}
-    with sqlite3.connect(cache_db_path) as C:
-        for smiles, molfile_path in C.execute(sql, smiles_list):
+    with sqlite3.connect(cache_db_path) as c:
+        for smiles, molfile_path in c.execute(sql, smiles_list):
             out[smiles] = molfile_path
     return out
 
@@ -83,13 +92,13 @@ def preload_cluster_sru(results_db_path, cluster_ids):
       WHERE cluster_id IN ({placeholders})
     """
     out = {}
-    with sqlite3.connect(results_db_path) as C:
-        for cid, is_undef, is_def, repcnt in C.execute(sql, cluster_ids):
+    with sqlite3.connect(results_db_path) as c:
+        for cid, is_undef, is_def, repcnt in c.execute(sql, cluster_ids):
             # normalize booleans + repeat count
-            is_def   = bool(is_def)
+            is_def = bool(is_def)
             is_undef = bool(is_undef)
-            has_sru  = is_def or is_undef
-            repcnt   = int(repcnt) if (repcnt is not None and is_def) else None
+            has_sru = is_def or is_undef
+            repcnt = int(repcnt) if (repcnt is not None and is_def) else None
             out[cid] = {"has_sru": has_sru, "is_undef": is_undef, "rep": repcnt}
     return out
 
@@ -97,13 +106,14 @@ def preload_cluster_sru(results_db_path, cluster_ids):
 def batch_insert_cluster_pairs(results_db_path, rows):
     if not rows:
         return
-    with sqlite3.connect(results_db_path) as R:
-        R.execute("BEGIN")
-        R.executemany("""
+    with sqlite3.connect(results_db_path) as r:
+        r.execute("BEGIN")
+        r.executemany(
+            """
             INSERT OR REPLACE INTO relationships
             (
-                    cluster_a, 
-                    cluster_b, 
+                    cluster_a,
+                    cluster_b,
                     cluster_a_members,
                     cluster_b_members,
                     cluster_a_size,
@@ -115,5 +125,7 @@ def batch_insert_cluster_pairs(results_db_path, rows):
                     version_tag
             )
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, rows)
-        R.execute("COMMIT")
+        """,
+            rows,
+        )
+        r.execute("COMMIT")

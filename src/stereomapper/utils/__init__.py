@@ -1,13 +1,12 @@
 """Utility functions and helpers."""
 
 from .itertools import chunked
-from .timing import timeit, section_timer
 from .logging import setup_logging
-from .suppress import setup_clean_logging, quiet_operation
+from .timing import section_timer, timeit
 
 __all__ = [
     "chunked",
     "timeit",
-    "section_timer", 
+    "section_timer",
     "setup_logging",
 ]

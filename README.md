@@ -10,11 +10,11 @@ StereoMapper is a stereochemistry-aware metabolite mapping pipeline that classif
 ---
 ## Key features
 - Stereochemistry-aware relationship assignment (identical, enantiomer, diastereomer, etc.)
-- Cache-accelerated re-runs for large corpora 
+- Cache-accelerated re-runs for large corpora
 - SQLite output for easy downstream analysis
 - Simple CLI commands
- 
---- 
+
+---
 
 ```mermaid
 flowchart LR
@@ -31,8 +31,8 @@ flowchart LR
 
 ## Repository Structure
 
-```bash 
-├── src/ # Core source code 
+```bash
+├── src/ # Core source code
 │ ├── classification # modules for classifying relationships
 │ ├── comparison # modules which run comparison functionality
 │ ├── config # configuration modules
@@ -44,15 +44,15 @@ flowchart LR
 │ ├── runners # orchestrating module for running pipeline
 │ ├── scoring # module for generating confidence scores
 │ ├── utils/ # Helper modules for setting up CLI etc.
-│ └── tests/ # Unit and integration tests 
-├── pyproject.toml # Python dependencies 
-├── LICENSE 
-└── README.md 
+│ └── tests/ # Unit and integration tests
+├── pyproject.toml # Python dependencies
+├── LICENSE
+└── README.md
 ```
 
---- 
+---
 
-## Installation 
+## Installation
 
 First clone the repo and navigate into the directory.
 
@@ -72,7 +72,7 @@ Now ensure you create a virtual environment to install the stereomapper package.
 
 ### Option A: Conda
 ```bash
-# create env 
+# create env
 conda env create -n stereomapper python=3.11 #recommended
 conda activate stereomapper
 
@@ -87,7 +87,7 @@ python -m venv .stereomapper
 source .stereomapper/bin/activate
 
 # now install from source
-pip install . 
+pip install .
 ```
 
 ### Option C: uv
@@ -113,14 +113,14 @@ uv pip install -e .
 ```
 
 ## Quickstart
-```bash 
+```bash
 
 # ensure you have activated your enviornment where you installed stereomapper
 conda activate stereomapper # or source stereomapper/bin/activate
 
 # try running against the example data from the repo
 stereomapper run \
-    --input-dir data/example_molfiles_dir \ 
+    --input-dir data/example_molfiles_dir \
     --sqlite-output results/example.sqlite
 
 # take a peek at the results (table names are documented below)
@@ -128,14 +128,14 @@ sqlite3 results/example.sqlite '.tables'
 sqlite3 results/example.sqlite 'SELECT * FROM relationships LIMIT 10;'
 ```
 
-## Usage 
+## Usage
 ```bash
 stereomapper run  --input data/example_molfiles_dir --sqlite-output run1.sqlite
-``` 
+```
 
 ### Common patterns
 ```bash
-# specify directory + recursion 
+# specify directory + recursion
 stereomapper run --input-dir data/molfiles_dir_recursive --recursive --sqlite-output run2.sqlite
 
 # specify a location to store the structure cache instead of the default location
@@ -166,21 +166,21 @@ stereomapper run --help
 ## Outputs
 
 StereoMapper writees two SQLite databases:
-- **(1) Structure cache** (e.g., `.cache/structures.sqlite)  
+- **(1) Structure cache** (e.g., `.cache/structures.sqlite)
 Caches canonicalised, normalised structures for reuse.
 
-- **(2) Output database** (e.g., results/run1.sqlite) 
+- **(2) Output database** (e.g., results/run1.sqlite)
 Contains final identity mappings and relationship assignments.
 
 ### Example queries
-```sql 
+```sql
 -- Top relationship counts
 SELECT classification, COUNT(*)
 FROM relationships
 GROUP BY classification
 ORDER BY COUNT(*) DESC;
 
--- Enantiomer pairs with high confidence 
+-- Enantiomer pairs with high confidence
 SELECT *
 FROM relationships
 WHERE classification = 'Enantiomers' and confidence >= 90
@@ -189,11 +189,11 @@ LIMIT 50;
 -- Check which clusters contain more than one member (considered duplicates if testing on single database)
 SELECT *
 FROM clusters
-WHERE member_count > 1 
+WHERE member_count > 1
 ORDER BY COUNT(*) DESC;
 ```
 
-## Paper 
+## Paper
 The pre-print of the paper can be found in bioRxiv at the following DOI:
 
 [McGoldrick J. et al. StereoMapper: Clarifying Metabolite Identity Through Stereochemically Aware Relationship Assignment. 2025.](https://doi.org/10.64898/2025.12.09.693222)

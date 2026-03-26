@@ -1,14 +1,17 @@
 # result/assemblers.py
-from collections import defaultdict
-from typing import Iterable, Mapping, Tuple, Optional
-import json
 import hashlib
-from rdkit import Chem
+import json
+from collections import defaultdict
+from collections.abc import Iterable, Mapping
 from pathlib import Path
+from typing import Optional
+
+from rdkit import Chem
+
 from stereomapper.domain.chemistry import ChemistryOperations, ChemistryValidator
 
-def cluster_rows(
-        rows: Iterable[Mapping]) -> Iterable[Tuple]:
+
+def cluster_rows(rows: Iterable[Mapping]) -> Iterable[tuple]:
     """
     Input rows must contain:
     inchikey_first, smiles (canonical),
@@ -24,15 +27,15 @@ def cluster_rows(
     # ---------- build (ik_first, smiles) groups ----------
     for r in rows:
         ik_first = (r.get("inchikey_first") or "").strip()
-        smi      = (r.get("smiles") or "").strip()  # identity_key_strict
+        smi = (r.get("smiles") or "").strip()  # identity_key_strict
         # Skip if either key is missing
         if not ik_first or not smi:
             continue
 
         is_undef = bool(r.get("is_undef_sru", False))
-        is_def   = bool(r.get("is_def_sru", False))
+        is_def = bool(r.get("is_def_sru", False))
         accessions = r.get("accession_curies", [])
-        rep_cnt  = r.get("sru_repeat_count", None)
+        rep_cnt = r.get("sru_repeat_count", None)
         # Normalise repeat count
         if rep_cnt in (None, "", "null", "None"):
             rep_cnt = None
@@ -42,12 +45,14 @@ def cluster_rows(
             except (TypeError, ValueError):
                 rep_cnt = None
 
-        by_smi[(ik_first, smi)].append({
-            "accession_curies": accessions if isinstance(accessions, list) else [],
-            "is_def": is_def,
-            "is_undef": is_undef,
-            "rep_cnt": rep_cnt,
-        })
+        by_smi[(ik_first, smi)].append(
+            {
+                "accession_curies": accessions if isinstance(accessions, list) else [],
+                "is_def": is_def,
+                "is_undef": is_undef,
+                "rep_cnt": rep_cnt,
+            }
+        )
 
     # ---------- emit clusters ----------
     for (ik_first, identity_key_strict), members_all in by_smi.items():
@@ -78,9 +83,14 @@ def cluster_rows(
                 members_hash = hashlib.sha256("\n".join(member_ids).encode("utf-8")).hexdigest()
 
                 yield (
-                    ik_first, identity_key_strict,
-                    0, 1, k,  # undef=0, def=1
-                    member_count, members_json, members_hash
+                    ik_first,
+                    identity_key_strict,
+                    0,
+                    1,
+                    k,  # undef=0, def=1
+                    member_count,
+                    members_json,
+                    members_hash,
                 )
             else:
                 # Multiple distinct defined counts: keep each separate; keep no-SRU separate
@@ -92,9 +102,14 @@ def cluster_rows(
                     members_hash = hashlib.sha256("\n".join(member_ids).encode("utf-8")).hexdigest()
 
                     yield (
-                        ik_first, identity_key_strict,
-                        0, 1, k,
-                        member_count, members_json, members_hash
+                        ik_first,
+                        identity_key_strict,
+                        0,
+                        1,
+                        k,
+                        member_count,
+                        members_json,
+                        members_hash,
                     )
 
                 if none_sru:
@@ -104,9 +119,14 @@ def cluster_rows(
                     members_hash = hashlib.sha256("\n".join(member_ids).encode("utf-8")).hexdigest()
 
                     yield (
-                        ik_first, identity_key_strict,
-                        0, 0, None,
-                        member_count, members_json, members_hash
+                        ik_first,
+                        identity_key_strict,
+                        0,
+                        0,
+                        None,
+                        member_count,
+                        members_json,
+                        members_hash,
                     )
         else:
             # No defined SRU at all in this (ik_first, smiles) group
@@ -117,9 +137,14 @@ def cluster_rows(
                 members_hash = hashlib.sha256("\n".join(member_ids).encode("utf-8")).hexdigest()
 
                 yield (
-                    ik_first, identity_key_strict,
-                    1, 0, None,
-                    member_count, members_json, members_hash
+                    ik_first,
+                    identity_key_strict,
+                    1,
+                    0,
+                    None,
+                    member_count,
+                    members_json,
+                    members_hash,
                 )
 
             if none_sru:
@@ -129,10 +154,16 @@ def cluster_rows(
                 members_hash = hashlib.sha256("\n".join(member_ids).encode("utf-8")).hexdigest()
 
                 yield (
-                    ik_first, identity_key_strict,
-                    0, 0, None,
-                    member_count, members_json, members_hash
+                    ik_first,
+                    identity_key_strict,
+                    0,
+                    0,
+                    None,
+                    member_count,
+                    members_json,
+                    members_hash,
                 )
+
 
 def build_mols_for_reps(reps, logger):
     """
@@ -159,7 +190,7 @@ def build_mols_for_reps(reps, logger):
             # Only add to fallback candidates, NOT to mol_by_cid
             fallback_candidates[cid] = smi
             logger.warning(f"Added cluster {cid} with SMILES {smi} to fallback candidates.")
-            
+
             # Still need to store properties and SMILES for fallback
             smi_by_cid[cid] = smi
             # For properties, we can't compute charge without a valid molecule
@@ -172,14 +203,19 @@ def build_mols_for_reps(reps, logger):
 
         is_radioactive = bool(ChemistryValidator.is_radioactive(mol))
         if is_radioactive:
-            logger.warning(f"[radioactive] cluster {cid} with SMILES {smi} contains radioactive atoms.")
+            logger.warning(
+                f"[radioactive] cluster {cid} with SMILES {smi} contains radioactive atoms."
+            )
 
         # Compute & store props for valid molecules
         formal_charge = ChemistryOperations.get_formal_charge(mol)
         props_by_cid[cid] = (formal_charge, is_radioactive)
 
-    logger.info(f"Built {len(mol_by_cid)} valid molecules and {len(fallback_candidates)} fallback candidates")
+    logger.info(
+        f"Built {len(mol_by_cid)} valid molecules and {len(fallback_candidates)} fallback candidates"
+    )
     return mol_by_cid, smi_by_cid, props_by_cid, fallback_candidates
+
 
 def _coerce_scalar(x):
     # Accept None
@@ -194,6 +230,7 @@ def _coerce_scalar(x):
     if val != val:  # NaN check
         return None
     return val
+
 
 def _normalise_classification(res):
     """
@@ -279,10 +316,11 @@ def _normalise_classification(res):
 
     return {
         "classification": cls,
-        "score": score,                  # <— this is now conf.score
+        "score": score,  # <— this is now conf.score
         "score_details": score_details,
         "extra_info": extra_info,
     }
+
 
 def _details_from_res(res_dict: dict) -> dict:
     conf = res_dict.get("confidence") or {}
@@ -291,23 +329,25 @@ def _details_from_res(res_dict: dict) -> dict:
     return {"confidence_bin": conf.get("bin")}
 
 
-# set the prefix rules 
+# set the prefix rules
 PREFIX_RULES = {
-    '/vmh_structures/': 'vmhM:',
-    '/kegg_structures/': 'kegg:',
-    '/chebi_structures/': 'chebi:',
-    '/hmdb_structures/': 'hmdb:',
-    '/lipidmaps_structures/': 'lipidmapsM:',
-    '/swisslipids_structures/': 'slm:',
-    '/modelseed_structures/': 'modelseed:'
+    "/vmh_structures/": "vmhM:",
+    "/kegg_structures/": "kegg:",
+    "/chebi_structures/": "chebi:",
+    "/hmdb_structures/": "hmdb:",
+    "/lipidmaps_structures/": "lipidmapsM:",
+    "/swisslipids_structures/": "slm:",
+    "/modelseed_structures/": "modelseed:",
 }
+
 
 def detect_prefix(molfile_path: str) -> str:
     p = str(Path(molfile_path).expanduser().resolve())
     for key, prefix in PREFIX_RULES.items():
         if key in p:
             return prefix
-    return 'unknown:'
+    return "unknown:"
+
 
 def prefixed_identifier(molfile_path: str, basename: str) -> str:
     prefix = detect_prefix(molfile_path)
@@ -325,13 +365,17 @@ def hash_file(path):
     with open(path, "rb") as f:
         return hashlib.md5(f.read()).hexdigest()
 
+
 # in cache_db.py
-def make_molecule_key(*, std_version: str,
-                      inchikey_full: Optional[str] = None,
-                      isomeric_smiles: Optional[str] = None,
-                      formal_charge: Optional[int] = None) -> str:
+def make_molecule_key(
+    *,
+    std_version: str,
+    inchikey_full: Optional[str] = None,
+    isomeric_smiles: Optional[str] = None,
+    formal_charge: Optional[int] = None,
+) -> str:
     base = inchikey_full or isomeric_smiles
     if not base:
         raise ValueError("make_molecule_key requires inchikey_full or isomeric_smiles")
     q = "NA" if formal_charge is None else formal_charge
-    return hashlib.blake2b(f"{std_version}|{base}|q={q}".encode(), digest_size=16).hexdigest()    
+    return hashlib.blake2b(f"{std_version}|{base}|q={q}".encode(), digest_size=16).hexdigest()
