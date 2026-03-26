@@ -4,12 +4,12 @@ import pytest
 
 from stereomapper.scoring.confidence import (
     ConfidenceScorer,
-    clamp01,
-    exp_decay_rmsd_class_aware,
-    undef_sites_penalty,
     _bin_class_aware,
     _isnum,
     _nz,
+    clamp01,
+    exp_decay_rmsd_class_aware,
+    undef_sites_penalty,
 )
 from stereomapper.scoring.models import ConfidenceResult
 

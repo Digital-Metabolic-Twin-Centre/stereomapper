@@ -22,6 +22,21 @@ dependencies = [
     "platformdirs==4.3.8"
 ]
 
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "black>=23.0",
+    "ruff>=0.1.0",
+    "mypy>=1.0",
+    "isort>=5.0",
+    "pre-commit>=3.0"
+]
+docs = [
+    "sphinx>=6.0",
+    "sphinx-rtd-theme>=1.0"
+]
+
 [project.scripts]
 # Creates a `stereomapper` command that calls stereomapper/cli.py:main
 stereomapper = "stereomapper.cli:main"
@@ -34,6 +49,23 @@ package-dir = { "" = "src" }
 # If you ship non-.py files (e.g., SQL templates, data), enable one of:
 # include-package-data = true
 
+[tool.black]
+line-length = 100
+target-version = ["py39"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "N", "UP"]
+extend-ignore = ["E501"]
+
+[tool.isort]
+profile = "black"
+line_length = 100
+skip_gitignore = true
+
 [tool.mypy]
 python_version = "3.11"
 strict = true
@@ -45,4 +77,3 @@ testpaths = ["tests"]
 python_files = ["test_*.py"]
 norecursedirs = ["old", "build", "dist", ".venv", "venv", "env", ".git", "data", "__pycache__"]
 addopts = "-ra"
-

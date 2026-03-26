@@ -1,21 +1,19 @@
-from pathlib import Path
-import re
-from rdkit import Chem
-from typing import Dict, List, Iterator, Any, Optional, Tuple
 import os
+import re
+from collections.abc import Iterator
+from typing import Any, Optional
+
+from rdkit import Chem
 
 
-def _add(out: List[Tuple[str, str]], namespace: str, local_id: str) -> None:
+def _add(out: list[tuple[str, str]], namespace: str, local_id: str) -> None:
     """Helper function to add namespace:local_id pairs to output list."""
     out.append((namespace, local_id))
 
 
-def _norm_keys(d: Dict[str, Any]) -> Dict[str, str]:
+def _norm_keys(d: dict[str, Any]) -> dict[str, str]:
     """Normalize keys; coerce ALL values to strings."""
-    return {
-        k.lower().replace(" ", "").replace("_", ""): _to_text(v).strip()
-        for k, v in d.items()
-    }
+    return {k.lower().replace(" ", "").replace("_", ""): _to_text(v).strip() for k, v in d.items()}
 
 
 def _to_text(v: Any) -> str:
@@ -57,36 +55,38 @@ class SDFPropertyExtractor:
     """
 
     @staticmethod
-    def extract_properties(molfile_path: str) -> Iterator[Dict[str, str]]:
+    def extract_properties(molfile_path: str) -> Iterator[dict[str, str]]:
         # strictParsing=False helps skip minor format issues instead of crashing
-        suppl = Chem.SDMolSupplier(molfile_path, sanitize=False, removeHs=False, strictParsing=False)
+        suppl = Chem.SDMolSupplier(
+            molfile_path, sanitize=False, removeHs=False, strictParsing=False
+        )
         for mol in suppl:
             if mol is None:
                 continue  # skip unparseable records
             yield mol.GetPropsAsDict()
 
-        
+
 class CurieExtractor:
-    """ Extract and infer identifiers from SDF properties """
+    """Extract and infer identifiers from SDF properties"""
 
     # patterns to match against for id assignment
     # note kegg not included due to clashes with vmh, causes confusion + duplication
     PATTERNS = [
-        (re.compile(r"^CHEBI:(\d+)$", re.I),            lambda m: ("chebi",          m.group(1))),
-        (re.compile(r"^HMDB(\d{5})$", re.I),            lambda m: ("hmdb",           f"HMDB{m.group(1)}")),
-        (re.compile(r"^LM[A-Z]{2}\d{5,}$", re.I),       lambda m: ("lipidmaps",      m.string)),
-        (re.compile(r"^SLM:(\d+)$", re.I),              lambda m: ("slm", m.group(1))),
-        (re.compile(r"^cpd(\d{5})$", re.I),             lambda m: ("modelseed",      f"cpd{m.group(1)}")),
-        (re.compile(r"^sabiork_(\d+)$", re.I),          lambda m: ("sabiork", m.group(1))),
+        (re.compile(r"^CHEBI:(\d+)$", re.I), lambda m: ("chebi", m.group(1))),
+        (re.compile(r"^HMDB(\d{5})$", re.I), lambda m: ("hmdb", f"HMDB{m.group(1)}")),
+        (re.compile(r"^LM[A-Z]{2}\d{5,}$", re.I), lambda m: ("lipidmaps", m.string)),
+        (re.compile(r"^SLM:(\d+)$", re.I), lambda m: ("slm", m.group(1))),
+        (re.compile(r"^cpd(\d{5})$", re.I), lambda m: ("modelseed", f"cpd{m.group(1)}")),
+        (re.compile(r"^sabiork_(\d+)$", re.I), lambda m: ("sabiork", m.group(1))),
     ]
 
-    def infer_curies(self, props: Dict[str, Any]) -> List[str]:
+    def infer_curies(self, props: dict[str, Any]) -> list[str]:
         """
         Return CURIE-like ids from a single SDF record's props.
         Safe against numeric/list/bytes values.
         """
         n = _norm_keys(props)
-        out: List[Tuple[str, str]] = []
+        out: list[tuple[str, str]] = []
 
         # --- ChEBI ---
         chebi_raw = n.get("chebiid") or n.get("chebi")
@@ -116,7 +116,6 @@ class CurieExtractor:
                 m = re.search(r"(\d+)$", s)
                 if m:
                     _add(out, "slm", m.group(1))  # no formatting
-
 
         # --- KEGG ---
         entry = n.get("entry")
@@ -153,7 +152,7 @@ class CurieExtractor:
                 curies.append(curie)
         return curies
 
-    def pick_primary_curie(self, props: Dict[str, str], curies: List[str]) -> Optional[str]:
+    def pick_primary_curie(self, props: dict[str, str], curies: list[str]) -> Optional[str]:
         """
         Choose one CURIE as 'primary' based on which provider's native tag is present.
         props must already be normalized to strings (i.e., via your _norm_keys/_to_text).
@@ -169,25 +168,33 @@ class CurieExtractor:
 
         # Priority by native source fields present
         if n.get("lmid") or n.get("lipidmaps"):
-            if (c := pick("lipidmaps")): return c
+            if c := pick("lipidmaps"):
+                return c
 
         entry = n.get("entry", "")
         if entry:
-            if (c := pick("kegg.compound")): return c
-            if (c := pick("kegg.drug")):     return c
-            if (c := pick("kegg.glycan")):   return c
+            if c := pick("kegg.compound"):
+                return c
+            if c := pick("kegg.drug"):
+                return c
+            if c := pick("kegg.glycan"):
+                return c
 
         if n.get("hmdbid") or n.get("databasename", "").lower() == "hmdb":
-            if (c := pick("hmdb")): return c
+            if c := pick("hmdb"):
+                return c
 
         if n.get("chebiid") or n.get("chebi"):
-            if (c := pick("chebi")): return c
+            if c := pick("chebi"):
+                return c
 
         if n.get("lipidid") or n.get("swisslipidsid") or n.get("slm"):
-            if (c := pick("slm")): return c
+            if c := pick("slm"):
+                return c
 
         if n.get("id") or n.get("modelseedid") or n.get("modelseed"):
-            if (c := pick("modelseed")): return c
+            if c := pick("modelseed"):
+                return c
 
         # Fall back to first inferred
         return curies[0] if curies else None

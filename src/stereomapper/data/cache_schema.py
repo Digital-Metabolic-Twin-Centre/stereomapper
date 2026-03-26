@@ -1,10 +1,11 @@
 # data/cache_schema.py
-from pathlib import Path
 import sqlite3
 
+
 def create_cache(con) -> sqlite3.Connection:
-    """ Open or create the stuctures/features cache database with the required schema. """
-    con.executescript("""
+    """Open or create the stuctures/features cache database with the required schema."""
+    con.executescript(
+        """
     -- Structures/features cache only
     CREATE TABLE IF NOT EXISTS structures (
         molecule_id      INTEGER PRIMARY KEY,
@@ -40,6 +41,7 @@ def create_cache(con) -> sqlite3.Connection:
     CREATE INDEX IF NOT EXISTS idx_structures_inchikey     ON structures(inchikey_first);
     CREATE INDEX IF NOT EXISTS idx_structures_smiles         ON structures(smiles);
     CREATE INDEX IF NOT EXISTS idx_sources_molid           ON sources(molecule_id);
-    """)
+    """
+    )
 
     return con
