@@ -1,0 +1,140 @@
+{
+  "@context": [
+    "https://doi.org/10.5063/schema/codemeta-2.0",
+    "https://schema.org"
+  ],
+  "@type": "SoftwareSourceCode",
+  "name": "StereoMapper",
+  "alternateName": "stereomapper",
+  "softwareVersion": "1.0.1",
+  "description": "Stereochemistry-aware molecular relationship pipeline for metabolite identity mapping across biochemical databases.",
+  "identifier": "https://doi.org/10.64898/2025.12.09.693222",
+  "codeRepository": "https://github.com/Digital-Metabolic-Twin-Centre/stereomapper",
+  "issueTracker": "https://github.com/Digital-Metabolic-Twin-Centre/stereomapper/issues",
+  "license": "https://spdx.org/licenses/GPL-3.0-only.html",
+  "programmingLanguage": "Python",
+  "runtimePlatform": "CPython >=3.9",
+  "operatingSystem": [
+    "Linux",
+    "macOS"
+  ],
+  "applicationCategory": "Cheminformatics",
+  "keywords": [
+    "stereochemistry",
+    "metabolomics",
+    "cheminformatics",
+    "systems biology",
+    "genome-scale metabolic models"
+  ],
+  "dateReleased": "2025-12-09",
+  "citation": "https://doi.org/10.64898/2025.12.09.693222",
+  "relatedLink": [
+    "https://doi.org/10.5281/zenodo.19251670"
+  ],
+  "softwareRequirements": [
+    "pandas",
+    "rdkit==2025.3.3",
+    "openbabel-wheel==3.1.1.22",
+    "numpy==1.26.4",
+    "psutil==7.0.0",
+    "tqdm==4.67.1",
+    "platformdirs==4.3.8"
+  ],
+  "developmentStatus": "active",
+  "maintainer": [
+    {
+      "@type": "Person",
+      "givenName": "Jack",
+      "familyName": "McGoldrick",
+      "email": "j.mcgoldrick9@universityofgalway.ie",
+      "affiliation": "University of Galway",
+      "@id": "https://orcid.org/0009-0000-2106-4159"
+    },
+    {
+      "@type": "Person",
+      "givenName": "Ronan M.T.",
+      "familyName": "Fleming",
+      "email": "ronan.mt.fleming@gmail.com",
+      "@id": "https://orcid.org/0000-0001-5346-9812"
+    }
+  ],
+  "author": [
+    {
+      "@type": "Person",
+      "givenName": "Jack",
+      "familyName": "McGoldrick",
+      "@id": "https://orcid.org/0009-0000-2106-4159",
+      "affiliation": "University of Galway"
+    },
+    {
+      "@type": "Person",
+      "givenName": "Marco",
+      "familyName": "Pagni",
+      "@id": "https://orcid.org/0000-0001-9292-9463"
+    },
+    {
+      "@type": "Person",
+      "givenName": "Saleh",
+      "familyName": "Alwer",
+      "@id": "https://orcid.org/0009-0008-3780-7445"
+    },
+    {
+      "@type": "Person",
+      "givenName": "Joanne",
+      "familyName": "Cooney",
+      "@id": "https://orcid.org/0009-0000-0242-7882"
+    },
+    {
+      "@type": "Person",
+      "givenName": "Natalia",
+      "familyName": "Makosa",
+      "@id": "https://orcid.org/0009-0001-3416-2919"
+    },
+    {
+      "@type": "Person",
+      "givenName": "Anne",
+      "familyName": "Niknejad",
+      "@id": "https://orcid.org/0000-0003-3308-6245"
+    },
+    {
+      "@type": "Person",
+      "givenName": "Sébastien",
+      "familyName": "Moretti",
+      "@id": "https://orcid.org/0000-0003-3947-488X"
+    },
+    {
+      "@type": "Person",
+      "givenName": "Jadzia",
+      "familyName": "Murphy",
+      "@id": "https://orcid.org/0009-0009-4277-0306"
+    },
+    {
+      "@type": "Person",
+      "givenName": "Filippo",
+      "familyName": "Martinelli",
+      "@id": "https://orcid.org/0000-0002-6635-6793"
+    },
+    {
+      "@type": "Person",
+      "givenName": "Alan",
+      "familyName": "Bridge",
+      "@id": "https://orcid.org/0000-0003-2148-9135"
+    },
+    {
+      "@type": "Person",
+      "givenName": "Ines",
+      "familyName": "Thiele",
+      "@id": "https://orcid.org/0000-0002-8071-7110"
+    },
+    {
+      "@type": "Person",
+      "givenName": "Ronan M.T.",
+      "familyName": "Fleming",
+      "@id": "https://orcid.org/0000-0001-5346-9812"
+    }
+  ],
+  "funder": [],
+  "contributor": [],
+  "documentation": "https://github.com/Digital-Metabolic-Twin-Centre/stereomapper#readme",
+  "downloadUrl": "https://doi.org/10.5281/zenodo.19251670"
+}

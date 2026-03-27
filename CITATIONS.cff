@@ -34,6 +34,7 @@ abstract: |
   context-aware frameworks. Its integration will enhance reaction-level cross-mapping and improve the
   accuracy of future GEM reconstructions.
 repository-code: https://github.com/Digital-Metabolic-Twin-Centre/stereomapper
+repository-artifact: https://doi.org/10.5281/zenodo.19251670
 url: https://github.com/Digital-Metabolic-Twin-Centre/stereomapper
 license: GPL-3.0-only
 authors:
@@ -88,6 +89,10 @@ keywords:
   - cheminformatics
   - systems biology
   - genome-scale metabolic models
+identifiers:
+  - description: "Zenodo archive of example molfiles and StereoMapper outputs"
+    type: doi
+    value: 10.5281/zenodo.19251670
 preferred-citation:
   type: article
   doi: 10.64898/2025.12.09.693222

@@ -125,6 +125,8 @@ stereomapper run \
 
 ```
 
+If you prefer a pinned copy of the example inputs and the matching SQLite output, download the archived package from Zenodo (DOI: [10.5281/zenodo.19251670](https://doi.org/10.5281/zenodo.19251670)) and extract it into the repository root before running the commands above.
+
 To take a look at the outputs we can query directly via the terminal, or we can use an application like dbeaver or SQLite in VSCode.
 
 ```bash
@@ -219,6 +221,10 @@ ORDER BY COUNT(*) DESC;
 The pre-print of the paper can be found in bioRxiv at the following DOI:
 
 [McGoldrick J. et al. StereoMapper: Clarifying Metabolite Identity Through Stereochemically Aware Relationship Assignment. 2025.](https://doi.org/10.64898/2025.12.09.693222)
+
+## Community
+- See [`CONTRIBUTING.md`](CONTRIBUTING.md) for development workflow, testing, and data-submission guidelines.
+- All participants are expected to follow the [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) when engaging in issues, discussions, or pull requests.
 
 ## Contact
 
