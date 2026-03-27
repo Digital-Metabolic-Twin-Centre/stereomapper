@@ -112,6 +112,18 @@ pip install -e .
 uv pip install -e .
 ```
 
+### Reproducible environment
+If you prefer a fully pinned toolchain (especially for RDKit/OpenBabel builds), create the project’s curated Conda environment:
+
+```bash
+mamba env create -f environment.yml
+conda activate stereomapper
+# install package entrypoint referencing already-installed deps
+pip install -e . --no-deps
+```
+
+The `environment.yml` file mirrors the constraints in `pyproject.toml` and adds the extra toolchain packages needed on Linux/macOS.
+
 ## Quickstart
 ```bash
 
@@ -197,6 +209,10 @@ Caches canonicalised, normalised structures for reuse.
 Contains final identity mappings and relationship assignments.
 
 See `docs/sqlite_schema.sql` (machine-readable DDL) and `docs/sqlite_schema.md` (column descriptions) for the exact schema shared by all StereoMapper runs. Bundle these files whenever you redistribute `.sqlite` outputs.
+
+Each row in `relationships` now provides both the human-readable `classification` and a machine-actionable `classification_term_id` drawn from the StereoMapper Relationship Ontology (SMRO). The controlled vocabulary is published in `docs/ontology/relationship_terms.csv`.
+
+Example molfiles are indexed in `examples/manifest.csv`, which records the provenance, checksum, and relationship class (plus SMRO identifier) for every file in the `examples/` tree. Include this manifest—and the Zenodo archive mentioned below—when sharing derived datasets so downstream users can audit provenance.
 
 ### Example queries
 ```sql

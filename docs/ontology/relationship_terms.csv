@@ -1,0 +1,10 @@
+term_id,label,definition,reference_uri
+SMRO:0001,Identical structures,"Two clusters encode the exact same structure including stereochemistry, charge, and tautomeric form.",https://purl.org/stereomapper/relationship/SMRO_0001
+SMRO:0002,Identical structures with undetermined charge,"Structures are equivalent but at least one member lacks explicit charge annotation; downstream tools should harmonize charge before comparison.",https://purl.org/stereomapper/relationship/SMRO_0002
+SMRO:0003,Protomers,"A conjugate acid/base pair that differ only by the position of one or more protons (protomeric relationship).",https://purl.org/stereomapper/relationship/SMRO_0003
+SMRO:0004,Indistinguishable structures,"Input data are insufficient to discriminate stereochemistry, so structures are treated as indistinguishable until clarified.",https://purl.org/stereomapper/relationship/SMRO_0004
+SMRO:0005,Enantiomers,"Nonsuperimposable mirror-image stereoisomers with opposite chiral configurations at all stereogenic centers.",https://purl.org/stereomapper/relationship/SMRO_0005
+SMRO:0006,Diastereomers,"Stereoisomers that are not related as mirror images and differ at one or more (but not all) stereogenic centers.",https://purl.org/stereomapper/relationship/SMRO_0006
+SMRO:0007,Stereo-resolution pairs,"A planar (racemic or unresolved) representation paired with a resolved stereochemical form of the same compound.",https://purl.org/stereomapper/relationship/SMRO_0007
+SMRO:0008,Unclassified,"Relationship exists but StereoMapper could not determine a confident class.",https://purl.org/stereomapper/relationship/SMRO_0008
+SMRO:0009,Unresolved,"Processing completed but ambiguity prevented StereoMapper from distinguishing between multiple plausible classes.",https://purl.org/stereomapper/relationship/SMRO_0009

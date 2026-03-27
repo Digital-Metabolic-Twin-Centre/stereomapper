@@ -6,6 +6,7 @@ from typing import Any, Optional
 
 from stereomapper.classification import InChIFallbackAnalyser, RelationshipAnalyser
 from stereomapper.data import results_repo
+from stereomapper.domain.relationship_terms import get_relationship_term_id
 from stereomapper.results import assemblers
 from stereomapper.utils.logging import setup_logging
 from stereomapper.utils.suppress import setup_clean_logging
@@ -304,6 +305,10 @@ def _process_result(
         if not extra_info:
             extra_info = getattr(res, "reason", None)
 
+    classification_term_id = get_relationship_term_id(cls)
+    if classification_term_id is None:
+        logger.warning("[pair] no ontology term for classification '%s'", cls)
+
     try:
         details_source = res.to_dict() if hasattr(res, "to_dict") else res
         details = assemblers._details_from_res(details_source)
@@ -320,6 +325,7 @@ def _process_result(
         cluster_a_size,
         cluster_b_size,
         cls,
+        classification_term_id,
         score,
         details_json,
         extra_info,

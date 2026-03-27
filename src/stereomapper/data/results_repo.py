@@ -119,12 +119,13 @@ def batch_insert_cluster_pairs(results_db_path, rows):
                     cluster_a_size,
                     cluster_b_size,
                     classification,
+                    classification_term_id,
                     score,
                     score_details,
                     extra_info,
                     version_tag
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
             rows,
         )

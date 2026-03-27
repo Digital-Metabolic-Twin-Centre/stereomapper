@@ -57,6 +57,7 @@ def results_schema(con: sqlite3.Connection) -> sqlite3.Connection:
                     cluster_a_size  INTEGER NOT NULL,
                     cluster_b_size  INTEGER NOT NULL,
                     classification  TEXT    NOT NULL,
+                    classification_term_id TEXT,
                     score           REAL,
                     score_details   TEXT,
                     extra_info      TEXT,

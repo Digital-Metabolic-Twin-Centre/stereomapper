@@ -163,8 +163,10 @@ class TestTableCreation:
             "cluster_a_size",
             "cluster_b_size",
             "classification",
+            "classification_term_id",
             "score",
             "score_details",
+            "extra_info",
             "version_tag",
         ]
 
@@ -401,9 +403,9 @@ class TestConstraints:
             """
             INSERT INTO relationships (
                 cluster_a, cluster_b, cluster_a_members, cluster_b_members,
-                cluster_a_size, cluster_b_size, classification, version_tag
+                cluster_a_size, cluster_b_size, classification, classification_term_id, version_tag
             )
-            VALUES (1, 2, 'mol1', 'mol2', 1, 1, 'similar', 'v1.0')
+            VALUES (1, 2, 'mol1', 'mol2', 1, 1, 'similar', 'SMRO:9999', 'v1.0')
         """
         )
 
@@ -413,9 +415,9 @@ class TestConstraints:
                 """
                 INSERT INTO relationships (
                     cluster_a, cluster_b, cluster_a_members, cluster_b_members,
-                    cluster_a_size, cluster_b_size, classification, version_tag
+                    cluster_a_size, cluster_b_size, classification, classification_term_id, version_tag
                 )
-                VALUES (1, 2, 'mol3', 'mol4', 2, 2, 'different', 'v1.0')
+                VALUES (1, 2, 'mol3', 'mol4', 2, 2, 'different', 'SMRO:9999', 'v1.0')
             """
             )
 
@@ -496,9 +498,9 @@ class TestSchemaRecreation:
             """
             INSERT INTO relationships (
                 cluster_a, cluster_b, cluster_a_members, cluster_b_members,
-                cluster_a_size, cluster_b_size, classification, version_tag
+                cluster_a_size, cluster_b_size, classification, classification_term_id, version_tag
             )
-            VALUES (1, 2, 'mol1', 'mol2', 1, 1, 'similar', 'v1.0')
+            VALUES (1, 2, 'mol1', 'mol2', 1, 1, 'similar', 'SMRO:9999', 'v1.0')
         """
         )
 
@@ -552,10 +554,10 @@ class TestFunctionalOperations:
             """
             INSERT INTO relationships (
                 cluster_a, cluster_b, cluster_a_members, cluster_b_members,
-                cluster_a_size, cluster_b_size, classification, score,
+                cluster_a_size, cluster_b_size, classification, classification_term_id, score,
                 score_details, version_tag
             )
-            VALUES (?, ?, 'mol1,mol2', 'mol3', 2, 1, 'dissimilar', 0.1,
+            VALUES (?, ?, 'mol1,mol2', 'mol3', 2, 1, 'dissimilar', 'SMRO:9999', 0.1,
                     '{"tanimoto": 0.1, "method": "fingerprint"}', 'v1.0')
         """,
             (cluster_a_id, cluster_b_id),

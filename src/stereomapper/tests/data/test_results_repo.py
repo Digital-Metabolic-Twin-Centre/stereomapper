@@ -57,8 +57,10 @@ def temp_results_db():
             cluster_a_size INTEGER,
             cluster_b_size INTEGER,
             classification TEXT,
+            classification_term_id TEXT,
             score REAL,
             score_details TEXT,
+            extra_info TEXT,
             version_tag TEXT,
             PRIMARY KEY (cluster_a, cluster_b, version_tag)
         )
@@ -322,10 +324,10 @@ class TestPreloadProcessedPairs:
 
         # Insert test relationships
         relationships = [
-            (1, 2, "mol1", "mol2", 1, 1, "similar", 0.8, "{}", "v1.0"),
-            (2, 3, "mol2", "mol3", 1, 1, "similar", 0.7, "{}", "v1.0"),
-            (3, 4, "mol3", "mol4", 1, 1, "dissimilar", 0.2, "{}", "v1.0"),
-            (5, 6, "mol5", "mol6", 1, 1, "similar", 0.9, "{}", "v1.0"),
+            (1, 2, "mol1", "mol2", 1, 1, "similar", "SMRO:9999", 0.8, "{}", None, "v1.0"),
+            (2, 3, "mol2", "mol3", 1, 1, "similar", "SMRO:9999", 0.7, "{}", None, "v1.0"),
+            (3, 4, "mol3", "mol4", 1, 1, "dissimilar", "SMRO:9999", 0.2, "{}", None, "v1.0"),
+            (5, 6, "mol5", "mol6", 1, 1, "similar", "SMRO:9999", 0.9, "{}", None, "v1.0"),
         ]
         batch_insert_cluster_pairs(str(db_path), relationships)
 
@@ -340,9 +342,9 @@ class TestPreloadProcessedPairs:
 
         # Insert test relationships with different versions
         relationships = [
-            (1, 2, "mol1", "mol2", 1, 1, "similar", 0.8, "{}", "v1.0"),
-            (1, 3, "mol1", "mol3", 1, 1, "similar", 0.7, "{}", "v2.0"),
-            (2, 3, "mol2", "mol3", 1, 1, "dissimilar", 0.2, "{}", "v1.0"),
+            (1, 2, "mol1", "mol2", 1, 1, "similar", "SMRO:9999", 0.8, "{}", None, "v1.0"),
+            (1, 3, "mol1", "mol3", 1, 1, "similar", "SMRO:9999", 0.7, "{}", None, "v2.0"),
+            (2, 3, "mol2", "mol3", 1, 1, "dissimilar", "SMRO:9999", 0.2, "{}", None, "v1.0"),
         ]
         batch_insert_cluster_pairs(str(db_path), relationships)
 
@@ -357,10 +359,10 @@ class TestPreloadProcessedPairs:
 
         # Insert test relationships
         relationships = [
-            (1, 10, "mol1", "mol10", 1, 1, "similar", 0.8, "{}", "v1.0"),  # Outside range
-            (2, 3, "mol2", "mol3", 1, 1, "similar", 0.7, "{}", "v1.0"),  # Inside range
-            (4, 5, "mol4", "mol5", 1, 1, "dissimilar", 0.2, "{}", "v1.0"),  # Inside range
-            (10, 11, "mol10", "mol11", 1, 1, "similar", 0.9, "{}", "v1.0"),  # Outside range
+            (1, 10, "mol1", "mol10", 1, 1, "similar", "SMRO:9999", 0.8, "{}", None, "v1.0"),
+            (2, 3, "mol2", "mol3", 1, 1, "similar", "SMRO:9999", 0.7, "{}", None, "v1.0"),
+            (4, 5, "mol4", "mol5", 1, 1, "dissimilar", "SMRO:9999", 0.2, "{}", None, "v1.0"),
+            (10, 11, "mol10", "mol11", 1, 1, "similar", "SMRO:9999", 0.9, "{}", None, "v1.0"),
         ]
         batch_insert_cluster_pairs(str(db_path), relationships)
 
@@ -376,7 +378,7 @@ class TestPreloadProcessedPairs:
 
         # Insert test relationships
         relationships = [
-            (1, 2, "mol1", "mol2", 1, 1, "similar", 0.8, "{}", "v2.0"),
+            (1, 2, "mol1", "mol2", 1, 1, "similar", "SMRO:9999", 0.8, "{}", None, "v2.0"),
         ]
         batch_insert_cluster_pairs(str(db_path), relationships)
 
@@ -556,9 +558,48 @@ class TestBatchInsertClusterPairs:
         _conn, db_path = temp_results_db
 
         rows = [
-            (1, 2, "mol1", "mol2", 1, 1, "similar", 0.8, '{"method": "fingerprint"}', "v1.0"),
-            (2, 3, "mol2", "mol3", 1, 1, "dissimilar", 0.2, '{"method": "fingerprint"}', "v1.0"),
-            (1, 3, "mol1", "mol3", 1, 1, "similar", 0.7, '{"method": "fingerprint"}', "v1.0"),
+            (
+                1,
+                2,
+                "mol1",
+                "mol2",
+                1,
+                1,
+                "similar",
+                "SMRO:9999",
+                0.8,
+                '{"method": "fingerprint"}',
+                None,
+                "v1.0",
+            ),
+            (
+                2,
+                3,
+                "mol2",
+                "mol3",
+                1,
+                1,
+                "dissimilar",
+                "SMRO:9999",
+                0.2,
+                '{"method": "fingerprint"}',
+                None,
+                "v1.0",
+            ),
+            (
+                1,
+                3,
+                "mol1",
+                "mol3",
+                1,
+                1,
+                "similar",
+                "SMRO:9999",
+                0.7,
+                '{"method": "fingerprint"}',
+                None,
+                "v1.0",
+            ),
         ]
 
         batch_insert_cluster_pairs(str(db_path), rows)
@@ -587,13 +628,39 @@ class TestBatchInsertClusterPairs:
 
         # Insert initial data
         initial_rows = [
-            (1, 2, "mol1", "mol2", 1, 1, "similar", 0.8, '{"method": "old"}', "v1.0"),
+            (
+                1,
+                2,
+                "mol1",
+                "mol2",
+                1,
+                1,
+                "similar",
+                "SMRO:9999",
+                0.8,
+                '{"method": "old"}',
+                None,
+                "v1.0",
+            ),
         ]
         batch_insert_cluster_pairs(str(db_path), initial_rows)
 
         # Replace with new data
         new_rows = [
-            (1, 2, "mol1", "mol2", 1, 1, "dissimilar", 0.3, '{"method": "new"}', "v1.0"),
+            (
+                1,
+                2,
+                "mol1",
+                "mol2",
+                1,
+                1,
+                "dissimilar",
+                "SMRO:9999",
+                0.3,
+                '{"method": "new"}',
+                None,
+                "v1.0",
+            ),
         ]
         batch_insert_cluster_pairs(str(db_path), new_rows)
 
@@ -629,8 +696,21 @@ class TestBatchInsertClusterPairs:
 
         # Create data with one invalid row (missing required field)
         rows = [
-            (1, 2, "mol1", "mol2", 1, 1, "similar", 0.8, "{}", "v1.0"),
-            (2, 3, None, "mol3", 1, 1, "dissimilar", 0.2, "{}", "v1.0"),  # NULL cluster_a_members
+            (1, 2, "mol1", "mol2", 1, 1, "similar", "SMRO:9999", 0.8, "{}", None, "v1.0"),
+            (
+                2,
+                3,
+                None,
+                "mol3",
+                1,
+                1,
+                "dissimilar",
+                "SMRO:9999",
+                0.2,
+                "{}",
+                None,
+                "v1.0",
+            ),  # NULL cluster_a_members
         ]
 
         # Should handle the error gracefully or raise appropriate exception
@@ -651,7 +731,7 @@ class TestBatchInsertClusterPairs:
         _conn, db_path = temp_results_db
 
         rows = [
-            (1, 2, "mol1", "mol2", 1, 1, "similar", 0.8, "{}", "v1.0"),
+            (1, 2, "mol1", "mol2", 1, 1, "similar", "SMRO:9999", 0.8, "{}", None, "v1.0"),
             (
                 1,
                 2,
@@ -660,11 +740,13 @@ class TestBatchInsertClusterPairs:
                 1,
                 1,
                 "dissimilar",
+                "SMRO:9999",
                 0.3,
                 "{}",
+                None,
                 "v2.0",
             ),  # Same clusters, different version
-            (2, 3, "mol2", "mol3", 1, 1, "similar", 0.7, "{}", "v1.0"),
+            (2, 3, "mol2", "mol3", 1, 1, "similar", "SMRO:9999", 0.7, "{}", None, "v1.0"),
         ]
 
         batch_insert_cluster_pairs(str(db_path), rows)
@@ -733,8 +815,10 @@ class TestIntegration:
                 2,
                 1,
                 "similar",
+                "SMRO:9999",
                 0.9,
                 "{}",
+                None,
                 "v1.0",
             ),
             (
@@ -745,8 +829,10 @@ class TestIntegration:
                 2,
                 1,
                 "dissimilar",
+                "SMRO:9999",
                 0.1,
                 "{}",
+                None,
                 "v1.0",
             ),
         ]

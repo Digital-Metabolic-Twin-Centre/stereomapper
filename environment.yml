@@ -1,0 +1,16 @@
+name: stereomapper
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - pip
+  - rdkit=2023.09.1
+  - openbabel=3.1.1
+  - pandas=2.2.2
+  - numpy=1.26.4
+  - sqlite
+  - pytest
+  - pip:
+      - psutil==7.0.0
+      - tqdm==4.67.1
+      - platformdirs==4.3.8

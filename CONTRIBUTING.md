@@ -43,7 +43,7 @@ Thanks for helping improve StereoMapper! This project benefits from contribution
 
 ## Data & Example Contributions
 - Place new example molfiles under `examples/<relationship>_files/` with descriptive filenames.
-- Update any manifests (e.g., `examples/manifest.csv`) and add provenance details (source database, license, relationship class).
+- Update `examples/manifest.csv` whenever you add or rename files. Each record must include the SMRO classification ID (`classification_term_id`), provenance (source DOI or URL), license, and SHA-256 checksum so downstream audits remain reproducible.
 - Provide a minimal command to reproduce relevant SQLite outputs. If outputs should be archived, describe them in the PR so maintainers can version them on Zenodo.
 
 ## Documentation Updates
