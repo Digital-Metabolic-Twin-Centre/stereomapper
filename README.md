@@ -115,34 +115,56 @@ uv pip install -e .
 ## Quickstart
 ```bash
 
-# ensure you have activated your enviornment where you installed stereomapper
+# ensure you have activated your environment where you installed stereomapper
 conda activate stereomapper # or source stereomapper/bin/activate
 
-# try running against the example data from the repo
+# try running against an example from the repo, lets try enantiomer examples
 stereomapper run \
-    --input-dir data/example_molfiles_dir \
-    --sqlite-output results/example.sqlite
+    --input-dir examples/enantiomer_files \
+    --sqlite-output results/enantiomer_results.sqlite # ensure output dir exists
 
-# take a peek at the results (table names are documented below)
-sqlite3 results/example.sqlite '.tables'
-sqlite3 results/example.sqlite 'SELECT * FROM relationships LIMIT 10;'
 ```
 
-## Usage
+To take a look at the outputs we can query directly via the terminal, or we can use an application like dbeaver or SQLite in VSCode.
+
 ```bash
-stereomapper run  --input data/example_molfiles_dir --sqlite-output run1.sqlite
+# for terminal access, in ubuntu
+sudo apt install sqlite3
+```
+
+or if using mac
+
+```bash
+brew install sqlite3
+```
+
+Then run the following commands to analyse the outputs
+
+```bash
+sqlite3 results/enantiomer_results.sqlite '.tables'
+sqlite3 results/enantiomer_results.sqlite 'SELECT * FROM relationships;'
+```
+
+## Usage - run on all example molfiles recursively
+```bash
+stereomapper run --input-dir examples --sqlite-output results/all_results.sqlite -R
+
+# query clusters (equivalence)
+sqlite3 results/all_results.sqlite 'SELECT * FROM clusters;'
+# query all relationships
+sqlite3 results/all_results.sqlite 'SELECT * FROM relationships;'
 ```
 
 ### Common patterns
 ```bash
 # specify directory + recursion
-stereomapper run --input-dir data/molfiles_dir_recursive --recursive --sqlite-output run2.sqlite
+stereomapper run --input-dir examples/ --recursive --sqlite-output all_results2.sqlite
 
 # specify a location to store the structure cache instead of the default location
-stereomapper run --input-dir data/molfiles --cache-path results/cache/structure_cache1.sqlite --sqlite-output run3.sqlite
+stereomapper run --input-dir examples/diastereomer_files --cache-path results/cache/diastereomer_cache.sqlite --sqlite-output diastereomer_results.sqlite
 
 # specify to create a fresh cache at the specified path (can also create fresh cache at default by omitting the path argument)
-stereomapper run --input_dir data/molfiles --cache-path results/cache/structure_cache1.sqlite --sqlite-output run4.sqlite --fresh-cache
+stereomapper run --input_dir examples/protomer_files --cache-path results/cache/prtomer_cache.sqlite --sqlite-output protomer_results.sqlite --fresh-cache
 ```
 
 ### Configuration Options
