@@ -32,22 +32,37 @@ flowchart LR
 ## Repository Structure
 
 ```bash
+├── docs/ # Schema + ontology docs
+│ ├── ontology/ # Controlled vocabulary (SMRO)
+│ ├── sqlite_schema.md # Human-readable schema
+│ └── sqlite_schema.sql # Canonical schema definition
+├── examples/ # Example molfiles and manifest
+│ └── manifest.csv # Sample metadata + checksums
+├── experiments/ # Exploratory runs and notebooks
+├── logs/ # Runtime logs (optional)
+├── results/ # Generated SQLite outputs (optional)
 ├── src/ # Core source code
-│ ├── classification # modules for classifying relationships
-│ ├── comparison # modules which run comparison functionality
-│ ├── config # configuration modules
-│ ├── data # scripts for setting up databases
-│ ├── domain # main chemistry functionality of pipeline
-│ ├── models # data models for structuring output classifications
-│ ├── processing # host of processing modules
-│ ├── results # helper modules for constructing outputs
-│ ├── runners # orchestrating module for running pipeline
-│ ├── scoring # module for generating confidence scores
-│ ├── utils/ # Helper modules for setting up CLI etc.
+│ ├── classification # Relationship classification modules
+│ ├── comparison # Pairwise comparison logic
+│ ├── config # Configuration modules
+│ ├── data # Database setup helpers
+│ ├── domain # Chemistry domain logic
+│ ├── models # Output data models
+│ ├── processing # Processing pipeline stages
+│ ├── results # Output construction helpers
+│ ├── runners # Pipeline orchestration
+│ ├── scoring # Confidence scoring
+│ ├── utils/ # CLI + general utilities
 │ └── tests/ # Unit and integration tests
-├── pyproject.toml # Python dependencies
+├── CITATIONS.cff # Citation metadata
+├── CODE_OF_CONDUCT.md
+├── CONTRIBUTING.md
 ├── LICENSE
-└── README.md
+├── README.md
+├── codemeta.json # Machine-readable metadata
+├── environment.yml # Conda environment (pinned)
+├── pyproject.toml # Python package metadata/deps
+└── uv.lock # uv lockfile
 ```
 
 ---
