@@ -196,6 +196,8 @@ Caches canonicalised, normalised structures for reuse.
 - **(2) Output database** (e.g., results/run1.sqlite)
 Contains final identity mappings and relationship assignments.
 
+See `docs/sqlite_schema.sql` (machine-readable DDL) and `docs/sqlite_schema.md` (column descriptions) for the exact schema shared by all StereoMapper runs. Bundle these files whenever you redistribute `.sqlite` outputs.
+
 ### Example queries
 ```sql
 -- Top relationship counts
