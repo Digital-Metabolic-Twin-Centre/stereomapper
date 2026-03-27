@@ -1,0 +1,119 @@
+cff-version: 1.2.0
+message: If you use StereoMapper in your work, please cite it using the metadata below.
+title: "StereoMapper: Clarifying Metabolite Identity Through Stereochemically Aware Relationship Assignment"
+version: 1.0.0
+doi: 10.64898/2025.12.09.693222
+date-released: 2025-12-09
+type: software
+abstract: |
+  Inaccuracies in metabolite cross-mapping frequently introduce errors into genome-scale
+  metabolic models (GEMs). A key challenge lies in distinguishing truly identical metabolites
+  from closely related structural variants, such as stereoisomers, across biochemical databases.
+  StereoMapper addresses this issue by establishing stereochemically aware relationships that
+  clarify metabolite identity. It operates entirely on structural information, using molecular
+  structures to infer equivalence and define relationships. StereoMapper was implemented using
+  RDKit (2025.3.3) and Open Babel-wheel (3.1.1.22), which provides the core functionality of
+  the Open Babel software, and benchmarked across four curated control datasets to evaluate
+  performance in relationship classification (enantiomer, diastereomer, stereo-resolution pairs,
+  and protomer). The pipeline was subsequently applied to 1.3 million molecular structures from
+  multiple metabolic databases to generate equivalent isomeric sets (groups of structures
+  identified as equivalent by StereoMapper). These sets were compared against the human subset
+  of MetaNetX, a context-aware reference, to assess concordance and investigate disagreements.
+  On curated positive control sets containing only positive examples across multiple relationship
+  classes, StereoMapper achieved mean precision, recall, and F1-scores of 92.6, 98.0, and 95.3,
+  respectively; following optimisation, these improved to 98.9, 98.2, and 98.5. Application to the
+  1.3 million structures produced over 339,000 stereochemically defined relationships between
+  molecular structures. Comparison with the human subset of MetaNetX assignments showed an overall
+  grouping concordance of 93.5%. The remaining 6.5% of differences were mainly associated with
+  protomer relationships (52.3%) and stereo-resolution pairs (37.4%), while 21.6% involved complex
+  or ambiguous cases.
+
+  Scientific contribution statement: StereoMapper provides a stereochemically aware pipeline for
+  metabolite relationship assignment that shows high performance across multiple benchmark datasets,
+  resolving key ambiguities in metabolite identity and providing a complementary approach to existing
+  context-aware frameworks. Its integration will enhance reaction-level cross-mapping and improve the
+  accuracy of future GEM reconstructions.
+repository-code: https://github.com/Digital-Metabolic-Twin-Centre/stereomapper
+url: https://github.com/Digital-Metabolic-Twin-Centre/stereomapper
+license: GPL-3.0-only
+authors:
+  - family-names: McGoldrick
+    given-names: Jack
+    email: j.mcgoldrick9@universityofgalway.ie
+    affiliation: University of Galway
+    orcid: "https://orcid.org/0009-0000-2106-4159"
+  - family-names: Pagni
+    given-names: Marco
+    orcid: "https://orcid.org/0000-0001-9292-9463"
+  - family-names: Alwer
+    given-names: Saleh
+    orcid: "https://orcid.org/0009-0008-3780-7445"
+  - family-names: Cooney
+    given-names: Joanne
+    orcid: "https://orcid.org/0009-0000-0242-7882"
+  - family-names: Makosa
+    given-names: Natalia
+    orcid: "https://orcid.org/0009-0001-3416-2919"
+  - family-names: Niknejad
+    given-names: Anne
+    orcid: "https://orcid.org/0000-0003-3308-6245"
+  - family-names: Moretti
+    given-names: Sébastien
+    orcid: "https://orcid.org/0000-0003-3947-488X"
+  - family-names: Murphy
+    given-names: Jadzia
+    orcid: "https://orcid.org/0009-0009-4277-0306"
+  - family-names: Martinelli
+    given-names: Filippo
+    orcid: "https://orcid.org/0000-0002-6635-6793"
+  - family-names: Bridge
+    given-names: Alan
+    orcid: "https://orcid.org/0000-0003-2148-9135"
+  - family-names: Thiele
+    given-names: Ines
+    orcid: "https://orcid.org/0000-0002-8071-7110"
+  - family-names: Fleming
+    given-names: Ronan M.T.
+    orcid: "https://orcid.org/0000-0001-5346-9812"
+contact:
+  - family-names: McGoldrick
+    given-names: Jack
+    email: j.mcgoldrick9@universityofgalway.ie
+  - family-names: Fleming
+    given-names: Ronan M.T.
+    email: "ronan.mt.fleming@gmail.com"
+keywords:
+  - stereochemistry
+  - metabolomics
+  - cheminformatics
+  - systems biology
+  - genome-scale metabolic models
+preferred-citation:
+  type: article
+  doi: 10.64898/2025.12.09.693222
+  title: "StereoMapper: Clarifying Metabolite Identity Through Stereochemically Aware Relationship Assignment"
+  authors:
+    - family-names: McGoldrick
+      given-names: Jack
+    - family-names: Pagni
+      given-names: Marco
+    - family-names: Alwer
+      given-names: Saleh
+    - family-names: Cooney
+      given-names: Joanne
+    - family-names: Makosa
+      given-names: Natalia
+    - family-names: Niknejad
+      given-names: Anne
+    - family-names: Moretti
+      given-names: Sébastien
+    - family-names: Murphy
+      given-names: Jadzia
+    - family-names: Martinelli
+      given-names: Filippo
+    - family-names: Bridge
+      given-names: Alan
+    - family-names: Thiele
+      given-names: Ines
+    - family-names: Fleming
+      given-names: Ronan M.T.
