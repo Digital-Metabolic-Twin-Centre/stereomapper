@@ -647,7 +647,7 @@ class InChIFallbackAnalyser:
                         },
                     )
                 )
-            elif stereo_class == "PLANAR VS_STEREO":
+            elif stereo_class == "PLANAR_VS_STEREO":
                 logger.info(
                     "Planar vs Stereo detected via fallback for pair (%s, %s)", cid_a, cid_b
                 )
