@@ -194,6 +194,9 @@ stereomapper run --input-dir examples/diastereomer_files --cache-path results/ca
 
 # specify to create a fresh cache at the specified path (can also create fresh cache at default by omitting the path argument)
 stereomapper run --input_dir examples/protomer_files --cache-path results/cache/prtomer_cache.sqlite --sqlite-output protomer_results.sqlite --fresh-cache
+
+# export results as a single spreadsheet workbook with 4 sheets
+stereomapper run --input-dir examples/enantiomer_files --sqlite-output results/enantiomer_results.xlsx --output-format csv
 ```
 
 ### Configuration Options
@@ -202,6 +205,7 @@ stereomapper run --input_dir examples/protomer_files --cache-path results/cache/
 | `--input` | Python list of input files |  |
 | `--input-dir` | Path to directory containing molfiles |  |
 | `--sqlite-output` | Path to the final output database containing results | Created if missing |
+| `--output-format` | Output format: `sqlite` (default) or `csv` (exports single `.xlsx` workbook with 4 sheets) | sqlite |
 | `--recursive` | Used with `--input-dir`, searches directories recursively | False |
 | `--cache-path` | Path to the structure cache database | Default location (.cache) |
 | `--fresh-cache` | Create a fresh cache database at the specified path | False |

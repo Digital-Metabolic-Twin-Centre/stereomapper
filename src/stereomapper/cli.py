@@ -53,7 +53,13 @@ def build_parser() -> argparse.ArgumentParser:
         "-o",
         "--sqlite-output",
         required=True,
-        help="Path to results SQLite DB (will be created if missing).",
+        help="Output path. For --output-format sqlite this is the DB path; for csv a .xlsx workbook is created.",
+    )
+    run_p.add_argument(
+        "--output-format",
+        choices=("sqlite", "csv"),
+        default="sqlite",
+        help="Output format: sqlite (default) or csv (exports a single .xlsx workbook with 4 sheets).",
     )
     run_p.add_argument(
         "-p",
@@ -177,6 +183,7 @@ def main() -> None:
             "  Cache: %s",
             "Fresh" if settings.database.fresh_cache else "Existing",
         )
+        logger.info("  Output format: %s", settings.output.format.value)
         logger.info("  Output: %s", out_path)
 
         if settings.dry_run:

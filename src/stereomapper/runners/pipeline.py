@@ -14,6 +14,7 @@ from tqdm import tqdm
 from stereomapper.comparison.compare import compare_cluster_relationships
 from stereomapper.config.resolvers import _resolve_cache_path, _resolve_inputs_from_cfg
 from stereomapper.data import cache_repo, cache_schema, db, results_repo, results_schema
+from stereomapper.data.exporters import export_results_workbook
 from stereomapper.domain.exceptions import (
     CacheError,
     ConfigurationError,
@@ -59,6 +60,7 @@ class PipelineConfig:
     recursive: bool = False
     extensions = (".mol", ".sdf")
     sqlite_output_path: str = None
+    output_format: str = "sqlite"
     cache_path: Optional[str] = None
     fresh_cache: bool = False
     namespace: str = "default"
@@ -99,6 +101,8 @@ class StereomapperPipeline:
 
         # Validate configuration early
         self._validate_config()
+        self._results_db_path = self._resolve_results_db_path()
+        self._final_output_path = self._resolve_final_output_path()
 
         # Get settings from configuration system if available
         self.chunk_size = self._get_chunk_size()
@@ -232,7 +236,7 @@ class StereomapperPipeline:
 
         if not self.config.sqlite_output_path:
             raise ConfigurationError(
-                "SQLite output path is required", config_field="sqlite_output_path"
+                "Output path is required", config_field="sqlite_output_path"
             ).add_suggestion("Set config.sqlite_output_path")
 
         # Validate output directory is writable
@@ -246,6 +250,32 @@ class StereomapperPipeline:
             ).add_context("error", str(e))
 
         logger.debug("Configuration validated successfully")
+
+        output_format = getattr(self.config, "output_format", "sqlite")
+        self.config.output_format = output_format
+        valid_output_formats = {"sqlite", "csv"}
+        if output_format not in valid_output_formats:
+            raise ConfigurationError(
+                f"Unsupported output format: {output_format}",
+                config_field="output_format",
+            ).add_suggestion("Use one of: sqlite, csv")
+
+    def _resolve_results_db_path(self) -> str:
+        """Resolve the internal SQLite path used during processing."""
+        configured_output = Path(self.config.sqlite_output_path)
+        if self.config.output_format == "csv":
+            if configured_output.suffix.lower() == ".xlsx":
+                return str(configured_output.with_suffix(".sqlite"))
+        return str(configured_output)
+
+    def _resolve_final_output_path(self) -> str:
+        """Resolve the user-facing output artifact path."""
+        configured_output = Path(self.config.sqlite_output_path)
+        if self.config.output_format == "csv":
+            if configured_output.suffix.lower() == ".xlsx":
+                return str(configured_output)
+            return str(configured_output.with_suffix(".xlsx"))
+        return str(configured_output)
 
     def _initialize_and_validate(self) -> list[str]:
         """Initialize pipeline and validate inputs."""
@@ -485,7 +515,7 @@ class StereomapperPipeline:
                 f"[results] Processing {len(unique_inchikeys)} unique inchikey_first values"
             )
 
-        with sqlite3.connect(self.config.sqlite_output_path, timeout=120.0) as res_con:
+        with sqlite3.connect(self._results_db_path, timeout=120.0) as res_con:
             # Apply pragma settings
             for pragma, value in self.pragma_settings.items():
                 res_con.execute(f"PRAGMA {pragma}={value};")
@@ -543,7 +573,7 @@ class StereomapperPipeline:
 
         # Calculate relationships
         compare_cluster_relationships(
-            results_db_path=self.config.sqlite_output_path,
+            results_db_path=self._results_db_path,
             inchikey_first=inchikey_first,
             version_tag=self.version_tag,
             logger=logger,
@@ -605,12 +635,14 @@ class StereomapperPipeline:
         session_pairs = origin_counts.get("session", 0)
         total_pairs = relationship_total
         cross_pairs = max(total_pairs - session_pairs, 0)
+        if self.config.output_format == "csv":
+            export_results_workbook(self._results_db_path, self._final_output_path)
 
         return PipelineResult(
             n_inputs=attempted,
             n_session_pairs=session_pairs,
             n_cross_pairs=cross_pairs,
-            output_path=self.config.sqlite_output_path,
+            output_path=self._final_output_path,
             processing_time=elapsed_time,
             cache_hits=self.metrics.get("cache_hits", 0),
             processing_errors=failures,
@@ -624,7 +656,7 @@ class StereomapperPipeline:
 
     def _update_relationship_metrics(self) -> None:
         """Summarize relationship rows from the results database."""
-        output_path = self.config.sqlite_output_path
+        output_path = self._results_db_path
         if not output_path:
             return
 

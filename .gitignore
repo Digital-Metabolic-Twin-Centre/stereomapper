@@ -30,7 +30,7 @@ venv/
 ENV/
 env/
 .stereomapper/
-stereomapper/
+/stereomapper/
 
 # Cache
 .cache/

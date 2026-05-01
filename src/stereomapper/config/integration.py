@@ -15,6 +15,7 @@ class PipelineConfig:
     recursive: bool = False
     extensions = (".mol", ".sdf")
     sqlite_output_path: str = None
+    output_format: str = "sqlite"
     cache_path: Optional[str] = None
     fresh_cache: bool = False
     namespace: str = "default"
@@ -28,6 +29,9 @@ class PipelineConfig:
         output_path: Optional[str] = None,
     ) -> "PipelineConfig":
         """Create PipelineConfig from Settings for backward compatibility."""
+        output_settings = getattr(settings, "output", None)
+        output_format = getattr(getattr(output_settings, "format", None), "value", "sqlite")
+
         return cls(
             input=inputs
             or ([str(f) for f in settings.input_files] if settings.input_files else None),
@@ -37,6 +41,7 @@ class PipelineConfig:
             recursive=getattr(settings, "recursive", False),
             sqlite_output_path=output_path
             or (str(settings.database.output_path) if settings.database.output_path else None),
+            output_format=output_format,
             cache_path=str(settings.database.cache_path) if settings.database.cache_path else None,
             fresh_cache=settings.database.fresh_cache,
             namespace=settings.namespace,
