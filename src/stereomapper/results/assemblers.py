@@ -11,16 +11,38 @@ from rdkit import Chem
 from stereomapper.domain.chemistry import ChemistryOperations, ChemistryValidator
 
 
-def cluster_rows(rows: Iterable[Mapping]) -> Iterable[tuple]:
+class ClusterRow(dict):
+    """Dictionary row that also supports the legacy tuple iteration order."""
+
+    _tuple_keys = (
+        "inchikey_first",
+        "identity_key_strict",
+        "is_undef_sru",
+        "is_def_sru",
+        "sru_repeat_count",
+        "member_count",
+        "members_json",
+        "members_hash",
+    )
+
+    def __iter__(self):
+        for key in self._tuple_keys:
+            yield self[key]
+
+
+def cluster_rows(rows: Iterable[Mapping]) -> Iterable[dict]:
     """
     Input rows must contain:
     inchikey_first, smiles (canonical),
     is_undef_sru, is_def_sru, sru_repeat_count, accession_curies(list)
 
-    Yields tuples matching INSERT columns:
-      (ik_first, identity_key_strict,
-       is_undef_sru, is_def_sru, sru_repeat_count,
-       member_count, members_json, members_hash)
+    Yields dicts for cluster inserts plus normalized members:
+        {
+            inchikey_first, identity_key_strict,
+            is_undef_sru, is_def_sru, sru_repeat_count,
+            member_count, members_json, members_hash,
+            member_ids
+        }
     """
     by_smi = defaultdict(list)
 
@@ -82,16 +104,17 @@ def cluster_rows(rows: Iterable[Mapping]) -> Iterable[tuple]:
                 members_json = json.dumps(member_ids) if member_count else None
                 members_hash = hashlib.sha256("\n".join(member_ids).encode("utf-8")).hexdigest()
 
-                yield (
-                    ik_first,
-                    identity_key_strict,
-                    0,
-                    1,
-                    k,  # undef=0, def=1
-                    member_count,
-                    members_json,
-                    members_hash,
-                )
+                yield ClusterRow({
+                    "inchikey_first": ik_first,
+                    "identity_key_strict": identity_key_strict,
+                    "is_undef_sru": 0,
+                    "is_def_sru": 1,
+                    "sru_repeat_count": k,  # undef=0, def=1
+                    "member_count": member_count,
+                    "members_json": members_json,
+                    "members_hash": members_hash,
+                    "member_ids": member_ids,
+                })
             else:
                 # Multiple distinct defined counts: keep each separate; keep no-SRU separate
                 for k in ks:
@@ -101,16 +124,17 @@ def cluster_rows(rows: Iterable[Mapping]) -> Iterable[tuple]:
                     members_json = json.dumps(member_ids) if member_count else None
                     members_hash = hashlib.sha256("\n".join(member_ids).encode("utf-8")).hexdigest()
 
-                    yield (
-                        ik_first,
-                        identity_key_strict,
-                        0,
-                        1,
-                        k,
-                        member_count,
-                        members_json,
-                        members_hash,
-                    )
+                    yield ClusterRow({
+                        "inchikey_first": ik_first,
+                        "identity_key_strict": identity_key_strict,
+                        "is_undef_sru": 0,
+                        "is_def_sru": 1,
+                        "sru_repeat_count": k,
+                        "member_count": member_count,
+                        "members_json": members_json,
+                        "members_hash": members_hash,
+                        "member_ids": member_ids,
+                    })
 
                 if none_sru:
                     member_ids = sorted({f for m in none_sru for f in m["accession_curies"]})
@@ -118,16 +142,17 @@ def cluster_rows(rows: Iterable[Mapping]) -> Iterable[tuple]:
                     members_json = json.dumps(member_ids) if member_count else None
                     members_hash = hashlib.sha256("\n".join(member_ids).encode("utf-8")).hexdigest()
 
-                    yield (
-                        ik_first,
-                        identity_key_strict,
-                        0,
-                        0,
-                        None,
-                        member_count,
-                        members_json,
-                        members_hash,
-                    )
+                    yield ClusterRow({
+                        "inchikey_first": ik_first,
+                        "identity_key_strict": identity_key_strict,
+                        "is_undef_sru": 0,
+                        "is_def_sru": 0,
+                        "sru_repeat_count": None,
+                        "member_count": member_count,
+                        "members_json": members_json,
+                        "members_hash": members_hash,
+                        "member_ids": member_ids,
+                    })
         else:
             # No defined SRU at all in this (ik_first, smiles) group
             if undef:
@@ -136,16 +161,17 @@ def cluster_rows(rows: Iterable[Mapping]) -> Iterable[tuple]:
                 members_json = json.dumps(member_ids) if member_count else None
                 members_hash = hashlib.sha256("\n".join(member_ids).encode("utf-8")).hexdigest()
 
-                yield (
-                    ik_first,
-                    identity_key_strict,
-                    1,
-                    0,
-                    None,
-                    member_count,
-                    members_json,
-                    members_hash,
-                )
+                yield ClusterRow({
+                    "inchikey_first": ik_first,
+                    "identity_key_strict": identity_key_strict,
+                    "is_undef_sru": 1,
+                    "is_def_sru": 0,
+                    "sru_repeat_count": None,
+                    "member_count": member_count,
+                    "members_json": members_json,
+                    "members_hash": members_hash,
+                    "member_ids": member_ids,
+                })
 
             if none_sru:
                 member_ids = sorted({f for m in none_sru for f in m["accession_curies"]})
@@ -153,16 +179,17 @@ def cluster_rows(rows: Iterable[Mapping]) -> Iterable[tuple]:
                 members_json = json.dumps(member_ids) if member_count else None
                 members_hash = hashlib.sha256("\n".join(member_ids).encode("utf-8")).hexdigest()
 
-                yield (
-                    ik_first,
-                    identity_key_strict,
-                    0,
-                    0,
-                    None,
-                    member_count,
-                    members_json,
-                    members_hash,
-                )
+                yield ClusterRow({
+                    "inchikey_first": ik_first,
+                    "identity_key_strict": identity_key_strict,
+                    "is_undef_sru": 0,
+                    "is_def_sru": 0,
+                    "sru_repeat_count": None,
+                    "member_count": member_count,
+                    "members_json": members_json,
+                    "members_hash": members_hash,
+                    "member_ids": member_ids,
+                })
 
 
 def build_mols_for_reps(reps, logger):

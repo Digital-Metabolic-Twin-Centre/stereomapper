@@ -25,19 +25,67 @@ def _preload_cluster_members(results_db_path: str, cluster_ids: list[str]) -> di
         return {}
 
     placeholders = ",".join(["?"] * len(cluster_ids))
-    sql = f"""
-        SELECT cluster_id, members_json, member_count
-        FROM clusters
+    sql_members = f"""
+        SELECT cluster_id, member_curie
+        FROM cluster_members
         WHERE cluster_id IN ({placeholders})
+        ORDER BY cluster_id, member_curie
     """
 
-    cluster_members = {}
+    cluster_members: dict[int, dict] = {cid: {"members": []} for cid in cluster_ids}
+
+    def _load_from_clusters(conn: sqlite3.Connection, missing_cluster_ids: list[int]) -> None:
+        if not missing_cluster_ids:
+            return
+        legacy_placeholders = ",".join(["?"] * len(missing_cluster_ids))
+        sql_legacy = f"""
+            SELECT cluster_id, members_json
+            FROM clusters
+            WHERE cluster_id IN ({legacy_placeholders})
+            ORDER BY cluster_id
+        """
+        for cluster_id, members_json in conn.execute(sql_legacy, missing_cluster_ids):
+            members = []
+            if members_json:
+                try:
+                    parsed = json.loads(members_json)
+                except Exception:
+                    parsed = []
+                if isinstance(parsed, list):
+                    members = [str(member) for member in parsed if member is not None and str(member)]
+            cluster_members.setdefault(cluster_id, {"members": []})["members"].extend(members)
+
     with sqlite3.connect(results_db_path) as conn:
-        for cluster_id, members_json, member_count in conn.execute(sql, cluster_ids):
-            cluster_members[cluster_id] = {
-                "members_json": members_json,
-                "member_count": member_count,
+        try:
+            rows = list(conn.execute(sql_members, cluster_ids))
+        except sqlite3.OperationalError as exc:
+            if "cluster_members" not in str(exc):
+                raise
+            rows = []
+
+        if rows and all(len(row) == 2 for row in rows):
+            for cluster_id, member_curie in rows:
+                cluster_members.setdefault(cluster_id, {"members": []})["members"].append(
+                    member_curie
+                )
+        elif rows:
+            return {
+                cluster_id: {"members_json": members_json, "member_count": member_count}
+                for cluster_id, members_json, member_count in rows
             }
+
+        clusters_with_normalized_members = {cluster_id for cluster_id, _ in rows}
+        missing_cluster_ids = [
+            cluster_id
+            for cluster_id in cluster_ids
+            if cluster_id not in clusters_with_normalized_members
+        ]
+        _load_from_clusters(conn, missing_cluster_ids)
+
+    for cid, payload in cluster_members.items():
+        members = payload.get("members", [])
+        payload["member_count"] = len(members)
+        payload["members_json"] = json.dumps(members, separators=(",", ":"))
 
     return cluster_members
 
@@ -263,8 +311,8 @@ def _process_result(
     cid_a: str,
     cid_b: str,
     version_tag: str,
-    cluster_a_members: str,
-    cluster_b_members: str,
+    cluster_a_members: list[str],
+    cluster_b_members: list[str],
     cluster_a_size: int,
     cluster_b_size: int,
 ) -> Optional[tuple]:
@@ -317,11 +365,14 @@ def _process_result(
         logger.exception("[pair] could not get score_details for (%s,%s); skipping", cid_a, cid_b)
         return None
 
+    cluster_a_members_json = json.dumps(cluster_a_members or [], separators=(",", ":"))
+    cluster_b_members_json = json.dumps(cluster_b_members or [], separators=(",", ":"))
+
     return (
         cid_a,
         cid_b,
-        cluster_a_members,
-        cluster_b_members,
+        cluster_a_members_json,
+        cluster_b_members_json,
         cluster_a_size,
         cluster_b_size,
         cls,
@@ -356,6 +407,7 @@ def compare_cluster_relationships(
     analyser = RelationshipAnalyser()
     fallback_analyser = InChIFallbackAnalyser()
     to_insert = []
+    relationship_members = []
 
     for i, cid_a in enumerate(cluster_ids):
         for cid_b in cluster_ids[i + 1 :]:
@@ -378,20 +430,28 @@ def compare_cluster_relationships(
             cluster_a_info = cluster_members_by_id.get(cid_a, {})
             cluster_b_info = cluster_members_by_id.get(cid_b, {})
 
+            members_a = cluster_a_info.get("members", [])
+            members_b = cluster_b_info.get("members", [])
+
             processed_result = _process_result(
                 res,
                 cid_a,
                 cid_b,
                 version_tag,
-                cluster_a_info.get("members_json"),
-                cluster_b_info.get("members_json"),
-                cluster_a_info.get("member_count", 0),
-                cluster_b_info.get("member_count", 0),
+                members_a,
+                members_b,
+                cluster_a_info.get("member_count", len(members_a)),
+                cluster_b_info.get("member_count", len(members_b)),
             )
 
             if processed_result is not None:
                 to_insert.append(processed_result)
+                for member in members_a:
+                    relationship_members.append((cid_a, cid_b, version_tag, "A", member))
+                for member in members_b:
+                    relationship_members.append((cid_a, cid_b, version_tag, "B", member))
 
     # Save results
     if to_insert:
         results_repo.batch_insert_cluster_pairs(results_db_path, to_insert)
+        results_repo.batch_insert_relationship_members(results_db_path, relationship_members)
