@@ -19,6 +19,13 @@ logger, summary_logger = setup_logging(
 )
 
 
+def _normalize_member_identifier(member: Any) -> str:
+    value = str(member).strip() if member is not None else ""
+    if value.startswith("local:"):
+        return value[6:]
+    return value
+
+
 def _preload_cluster_members(results_db_path: str, cluster_ids: list[str]) -> dict:
     """Preload cluster member information for all clusters."""
     if not cluster_ids:
@@ -52,7 +59,11 @@ def _preload_cluster_members(results_db_path: str, cluster_ids: list[str]) -> di
                 except Exception:
                     parsed = []
                 if isinstance(parsed, list):
-                    members = [str(member) for member in parsed if member is not None and str(member)]
+                    members = [
+                        _normalize_member_identifier(member)
+                        for member in parsed
+                        if member is not None and str(member).strip()
+                    ]
             cluster_members.setdefault(cluster_id, {"members": []})["members"].extend(members)
 
     with sqlite3.connect(results_db_path) as conn:
@@ -66,7 +77,7 @@ def _preload_cluster_members(results_db_path: str, cluster_ids: list[str]) -> di
         if rows and all(len(row) == 2 for row in rows):
             for cluster_id, member_curie in rows:
                 cluster_members.setdefault(cluster_id, {"members": []})["members"].append(
-                    member_curie
+                    _normalize_member_identifier(member_curie)
                 )
         elif rows:
             return {
@@ -88,6 +99,41 @@ def _preload_cluster_members(results_db_path: str, cluster_ids: list[str]) -> di
         payload["members_json"] = json.dumps(members, separators=(",", ":"))
 
     return cluster_members
+
+
+def _clear_existing_relationships_for_clusters(
+    results_db_path: str, version_tag: str, cluster_ids: list[int]
+) -> None:
+    if not cluster_ids:
+        return
+    placeholders = ",".join(["?"] * len(cluster_ids))
+    params = [version_tag, *cluster_ids, *cluster_ids]
+    with sqlite3.connect(results_db_path) as conn:
+        try:
+            conn.execute(
+                f"""
+                DELETE FROM relationship_members
+                WHERE version_tag = ?
+                  AND cluster_a IN ({placeholders})
+                  AND cluster_b IN ({placeholders})
+                """,
+                params,
+            )
+        except sqlite3.OperationalError:
+            pass
+        try:
+            conn.execute(
+                f"""
+                DELETE FROM relationships
+                WHERE version_tag = ?
+                  AND cluster_a IN ({placeholders})
+                  AND cluster_b IN ({placeholders})
+                """,
+                params,
+            )
+        except sqlite3.OperationalError:
+            pass
+        conn.commit()
 
 
 def _load_cluster_data(
@@ -365,8 +411,11 @@ def _process_result(
         logger.exception("[pair] could not get score_details for (%s,%s); skipping", cid_a, cid_b)
         return None
 
-    cluster_a_members_json = json.dumps(cluster_a_members or [], separators=(",", ":"))
-    cluster_b_members_json = json.dumps(cluster_b_members or [], separators=(",", ":"))
+    clean_members_a = [_normalize_member_identifier(m) for m in (cluster_a_members or [])]
+    clean_members_b = [_normalize_member_identifier(m) for m in (cluster_b_members or [])]
+
+    cluster_a_members_json = json.dumps(clean_members_a, separators=(",", ":"))
+    cluster_b_members_json = json.dumps(clean_members_b, separators=(",", ":"))
 
     return (
         cid_a,
@@ -400,6 +449,9 @@ def compare_cluster_relationships(
     ) = data_result
     sru_by_cid = results_repo.preload_cluster_sru(results_db_path, cluster_ids)
 
+    _clear_existing_relationships_for_clusters(results_db_path, version_tag, cluster_ids)
+    processed_pairs = set()
+
     # Preload cluster member information
     cluster_members_by_id = _preload_cluster_members(results_db_path, cluster_ids)
 
@@ -430,8 +482,8 @@ def compare_cluster_relationships(
             cluster_a_info = cluster_members_by_id.get(cid_a, {})
             cluster_b_info = cluster_members_by_id.get(cid_b, {})
 
-            members_a = cluster_a_info.get("members", [])
-            members_b = cluster_b_info.get("members", [])
+            members_a = [_normalize_member_identifier(m) for m in cluster_a_info.get("members", [])]
+            members_b = [_normalize_member_identifier(m) for m in cluster_b_info.get("members", [])]
 
             processed_result = _process_result(
                 res,

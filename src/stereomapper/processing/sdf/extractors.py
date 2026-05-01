@@ -202,7 +202,7 @@ class CurieExtractor:
     @staticmethod
     def fallback_accession(file_path: str) -> str:
         """
-        Returns CURIE-like 'ns:id' or 'local:<basename>'.
+        Returns CURIE-like 'ns:id' or '<basename>' for local-only files.
         Never throws; never guesses ambiguous.
         """
         base = _strip_exts(file_path)
@@ -213,7 +213,7 @@ class CurieExtractor:
             if m:
                 provider, local = maker(m)
                 if provider.startswith("ambiguous."):
-                    return f"local:{base}"
+                    return base
                 return f"{provider}:{local}"
 
         # 3) Already namespaced like 'chebi:15377' (case-insensitive)
@@ -223,4 +223,4 @@ class CurieExtractor:
                 return f"{ns.lower()}:{local}"
 
         # 4) Fallback
-        return f"local:{base}"
+        return base

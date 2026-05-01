@@ -48,7 +48,12 @@ class ConfigurationLoader:
 
             # Output settings updates (simplified)
             output_updates = {}
-            # REMOVED: format handling since we only support SQLite
+            if (
+                hasattr(args, "output_format")
+                and isinstance(args.output_format, str)
+                and args.output_format
+            ):
+                output_updates["format"] = OutputFormat(args.output_format)
             if hasattr(args, "no_errors") and args.no_errors:
                 output_updates["include_errors"] = False
             if hasattr(args, "verbose_errors") and args.verbose_errors:
@@ -136,7 +141,7 @@ class ConfigurationLoader:
                 rmsd_threshold=0.5,
             ),
             output=OutputSettings(
-                format=OutputFormat.SQLITE,  # Always SQLite
+                format=OutputFormat.SQLITE,
                 include_errors=True,
                 include_metadata=True,
                 verbose_errors=False,

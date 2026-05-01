@@ -26,6 +26,7 @@ class OutputFormat(Enum):
     """Supported output formats."""
 
     SQLITE = "sqlite"
+    CSV = "csv"
 
 
 @dataclass
@@ -113,15 +114,18 @@ class ChemistrySettings:
 class OutputSettings:
     """Output-related configuration."""
 
-    format: OutputFormat = OutputFormat.SQLITE  # Keep this field, always SQLite
+    format: OutputFormat = OutputFormat.SQLITE
     include_errors: bool = True
     include_metadata: bool = True
     verbose_errors: bool = False
 
     def validate(self) -> None:
         """Validate output settings."""
-        # Always SQLite, no validation needed
-        pass
+        if not isinstance(self.format, OutputFormat):
+            raise ConfigurationError(
+                f"Unsupported output format: {self.format}",
+                config_field="output.format",
+            ).add_suggestion("Use one of: sqlite, csv")
 
 
 @dataclass
@@ -218,7 +222,6 @@ class Settings:
 
     def _validate_output_compatibility(self) -> None:
         """Validate output format compatibility."""
-        # Since we only support SQLite, just check that database path is provided
         if not self.database.output_path:
             raise ConfigurationError(
                 "SQLite output format requires database.output_path",
