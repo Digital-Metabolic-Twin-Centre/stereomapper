@@ -14,18 +14,39 @@ def _sru_key(is_def: bool, is_undef: bool, repeat_count: int | None) -> str:
 
 def _coerce_cluster_row(row) -> dict:
     if isinstance(row, dict):
+        row.setdefault("status", "passed")
+        row.setdefault("error", None)
         return row
 
-    (
-        inchikey_first,
-        identity_key_strict,
-        is_undef_sru,
-        is_def_sru,
-        sru_repeat_count,
-        member_count,
-        members_json,
-        members_hash,
-    ) = row
+    status = "passed"
+    error = None
+
+    if len(row) == 8:
+        (
+            inchikey_first,
+            identity_key_strict,
+            is_undef_sru,
+            is_def_sru,
+            sru_repeat_count,
+            member_count,
+            members_json,
+            members_hash,
+        ) = row
+    elif len(row) == 10:
+        (
+            inchikey_first,
+            identity_key_strict,
+            is_undef_sru,
+            is_def_sru,
+            sru_repeat_count,
+            member_count,
+            members_json,
+            members_hash,
+            status,
+            error,
+        ) = row
+    else:
+        raise ValueError(f"Unexpected cluster row length: {len(row)}")
 
     member_ids = []
     if isinstance(members_json, str) and members_json:
@@ -48,12 +69,12 @@ def _coerce_cluster_row(row) -> dict:
         "members_json": members_json,
         "members_hash": members_hash,
         "member_ids": member_ids,
+        "status": status,
+        "error": error,
     }
 
 
-def bulk_upsert_clusters(
-    conn: sqlite3.Connection, rows: Iterable[dict], chunk_size: int = 2000
-):
+def bulk_upsert_clusters(conn: sqlite3.Connection, rows: Iterable[dict], chunk_size: int = 2000):
     """
     rows must be from cluster_rows(). Uses a single transaction.
     Also populates normalized cluster_members.
@@ -62,15 +83,18 @@ def bulk_upsert_clusters(
     INSERT INTO clusters
       (inchikey_first, identity_key_strict,
        is_undef_sru, is_def_sru, sru_repeat_count,
-       member_count, members_json, members_hash)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+         member_count, members_json, members_hash,
+         status, error)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT(inchikey_first, identity_key_strict, sru_key) DO UPDATE SET
        is_undef_sru     = excluded.is_undef_sru,
        is_def_sru       = excluded.is_def_sru,
        sru_repeat_count = excluded.sru_repeat_count,
        member_count     = excluded.member_count,
        members_json     = excluded.members_json,
-       members_hash     = excluded.members_hash;
+         members_hash     = excluded.members_hash,
+         status           = excluded.status,
+         error            = excluded.error;
     """
     it = iter(rows)
     with conn:  # single transaction
@@ -104,6 +128,8 @@ def bulk_upsert_clusters(
                     r["member_count"],
                     r["members_json"],
                     r["members_hash"],
+                    r.get("status") or "passed",
+                    r.get("error"),
                 )
                 for r in batch
             ]
@@ -128,9 +154,7 @@ def bulk_upsert_clusters(
                 flat_keys,
             ).fetchall()
 
-            id_by_key = {
-                (ik, smi, sru_key): cid for (cid, ik, smi, sru_key) in rows_db
-            }
+            id_by_key = {(ik, smi, sru_key): cid for (cid, ik, smi, sru_key) in rows_db}
             cluster_ids = [cid for cid, _, _, _ in rows_db]
 
             if cluster_ids:
@@ -178,6 +202,22 @@ def fetch_cluster_reps_for_inchikey(results_db_path: str, inchikey_first: str):
             (inchikey_first,),
         ).fetchall()
     return rows
+
+
+def update_cluster_statuses(
+    results_db_path: str, statuses: list[tuple[str, str | None, int]]
+) -> None:
+    if not statuses:
+        return
+    with sqlite3.connect(results_db_path) as conn:
+        conn.executemany(
+            """
+            UPDATE clusters
+            SET status = ?, error = ?
+            WHERE cluster_id = ?
+            """,
+            statuses,
+        )
 
 
 def preload_processed_pairs(results_db_path, version_tag, cluster_ids):

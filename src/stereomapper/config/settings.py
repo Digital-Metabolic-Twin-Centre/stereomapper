@@ -132,7 +132,7 @@ class OutputSettings:
 class LoggingSettings:
     """Logging configuration."""
 
-    level: LogLevel = LogLevel.INFO
+    level: LogLevel = LogLevel.WARNING
     file_path: Optional[Path] = None
     console_output: bool = True
     include_timestamps: bool = True

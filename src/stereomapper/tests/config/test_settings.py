@@ -205,7 +205,7 @@ class TestLoggingSettings:
     def test_default_values(self):
         """Test default values are set correctly."""
         settings = LoggingSettings()
-        assert settings.level == LogLevel.INFO
+        assert settings.level == LogLevel.WARNING
         assert settings.file_path is None
         assert settings.console_output is True
         assert settings.include_timestamps is True

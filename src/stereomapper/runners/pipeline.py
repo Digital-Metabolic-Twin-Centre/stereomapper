@@ -1,9 +1,12 @@
+import csv
 import json
 import logging
 import os
 import sqlite3
+import sys
 import time
 from dataclasses import dataclass
+from datetime import datetime
 from itertools import islice, tee
 from pathlib import Path
 from typing import Optional
@@ -24,16 +27,7 @@ from stereomapper.domain.exceptions import (
 from stereomapper.domain.models import ProcessingResult
 from stereomapper.processing import BatchProcessor, InputValidator
 from stereomapper.results import assemblers
-from stereomapper.utils.logging import setup_logging
-
-# from stereomapper.comparison.compare import compare_cluster_relationships  # removed: duplicate
-from stereomapper.utils.suppress import setup_clean_logging
 from stereomapper.utils.timing import timeit
-
-# from stereomapper.utils.timing import section_timer  # removed: unused
-
-setup_clean_logging()
-
 
 # Configuration integration
 try:
@@ -43,12 +37,8 @@ try:
 except ImportError:
     _CONFIG_AVAILABLE = False
 
-logger, summary_logger = setup_logging(
-    console=True,
-    level="INFO",  # Detailed logging to files
-    quiet_console=True,  # Minimal console output during progress bar
-    console_level="ERROR",  # Only errors to console
-)
+logger = logging.getLogger("stereomapper")
+summary_logger = logging.getLogger("stereomapper.summary")
 
 
 @dataclass
@@ -118,6 +108,7 @@ class StereomapperPipeline:
         # Initialize processors
         self.batch_processor = None
         self.version_tag = "v1.0"
+        self._parse_error_log_path = self._init_parse_error_log()
 
         # Metrics tracking
         self.metrics = {
@@ -144,6 +135,8 @@ class StereomapperPipeline:
         pipeline_pbar = None
         show_progress = os.getenv("NO_PROGRESS", "").lower() not in ["1", "true", "yes"]
 
+        stream_levels = []
+        summary_stream_levels = []
         try:
             if show_progress:
                 pipeline_pbar = tqdm(
@@ -154,14 +147,21 @@ class StereomapperPipeline:
                     ncols=100,  # Shorter width to avoid wrapping
                     position=0,  # Keep at top
                     leave=True,  # Leave the bar when done
+                    file=sys.stdout,
                 )
                 pipeline_pbar.set_postfix_str("Initializing...")
 
             # Temporarily suppress logging during progress bar display
             if show_progress:
-                # Increase log level to reduce noise during progress display
-                original_level = logger.level
-                logger.setLevel(logging.CRITICAL)  # Only show critical errors
+                # Temporarily silence console handlers without muting file logs
+                for handler in logger.handlers:
+                    if isinstance(handler, logging.StreamHandler):
+                        stream_levels.append((handler, handler.level))
+                        handler.setLevel(logging.ERROR)
+                for handler in summary_logger.handlers:
+                    if isinstance(handler, logging.StreamHandler):
+                        summary_stream_levels.append((handler, handler.level))
+                        handler.setLevel(logging.ERROR)
 
                 # Also suppress warnings from other modules
                 import warnings
@@ -192,7 +192,10 @@ class StereomapperPipeline:
 
             # Restore logging level
             if show_progress:
-                logger.setLevel(original_level)
+                for handler, level in stream_levels:
+                    handler.setLevel(level)
+                for handler, level in summary_stream_levels:
+                    handler.setLevel(level)
                 warnings.resetwarnings()
 
             # Step 5: Cleanup and return results
@@ -203,7 +206,10 @@ class StereomapperPipeline:
                 pipeline_pbar.close()
             # Restore logging level on error
             if show_progress:
-                logger.setLevel(original_level)
+                for handler, level in stream_levels:
+                    handler.setLevel(level)
+                for handler, level in summary_stream_levels:
+                    handler.setLevel(level)
                 warnings.resetwarnings()
             self._cleanup()
             raise
@@ -212,7 +218,10 @@ class StereomapperPipeline:
                 pipeline_pbar.close()
             # Restore logging level on error
             if show_progress:
-                logger.setLevel(original_level)
+                for handler, level in stream_levels:
+                    handler.setLevel(level)
+                for handler, level in summary_stream_levels:
+                    handler.setLevel(level)
                 warnings.resetwarnings()
             self._cleanup()
             exc = ProcessingError(
@@ -236,7 +245,7 @@ class StereomapperPipeline:
 
         if not self.config.sqlite_output_path:
             raise ConfigurationError(
-                "Output path is required", config_field="sqlite_output_path"
+                "SQLite output path is required", config_field="sqlite_output_path"
             ).add_suggestion("Set config.sqlite_output_path")
 
         # Validate output directory is writable
@@ -279,11 +288,11 @@ class StereomapperPipeline:
 
     def _initialize_and_validate(self) -> list[str]:
         """Initialize pipeline and validate inputs."""
-        summary_logger.info("[startup] Starting stereomapper 2D batch processing")
+        logger.info("[startup] Starting stereomapper 2D batch processing")
 
         # Resolve input files using your existing logic
         molfiles = _resolve_inputs_from_cfg(self.config)
-        summary_logger.info(f"[startup] Found {len(molfiles)} input molfiles")
+        logger.info(f"[startup] Found {len(molfiles)} input molfiles")
 
         validator = InputValidator()
         # Validate molfile paths using your existing logic
@@ -292,6 +301,9 @@ class StereomapperPipeline:
             self.metrics["files_skipped"] += len(invalid_molfiles)
             logger.warning(
                 f"[input-check] Found {len(invalid_molfiles)} invalid molfile paths; they will be skipped."
+            )
+            self._record_parse_errors(
+                [(path, "input_validation", "invalid_path") for path in invalid_molfiles]
             )
 
         # Initialize batch processor
@@ -336,7 +348,7 @@ class StereomapperPipeline:
         self, molfiles: list[str], pipeline_pbar=None, allocated_percent=70
     ) -> None:
         """Process molecules in chunks with progress tracking."""
-        summary_logger.info(f"[processing] Starting processing of {len(molfiles)} molfiles")
+        logger.info(f"[processing] Starting processing of {len(molfiles)} molfiles")
         self.processed_molfiles = molfiles
         if not molfiles:
             raise ValidationError(
@@ -432,11 +444,20 @@ class StereomapperPipeline:
                     else:
                         batch_failed += 1
                         self.metrics["files_failed"] += 1
+                        if result.file_path:
+                            self._record_parse_errors(
+                                [(result.file_path, "processing", result.error)]
+                            )
 
                 if exception_in_batch:
                     # Count whole batch as failed for metrics consistency
                     batch_failed = batch_size
                     self.metrics["files_failed"] += batch_size
+                    if last_chunk_exception:
+                        batch_error = f"batch_error:{last_error_type}: {last_chunk_exception}"
+                        self._record_parse_errors(
+                            [(path, "processing", batch_error) for path in batch]
+                        )
 
                 self.metrics["files_processed"] = (
                     self.metrics["files_succeeded"] + self.metrics["files_failed"]
@@ -463,7 +484,7 @@ class StereomapperPipeline:
                     if (batch_index % 10 == 0) or (done >= total):
                         batch_time = time.perf_counter() - batch_start
                         speed = (batch_size / batch_time) if batch_time > 0 else float("inf")
-                        summary_logger.info(
+                        logger.info(
                             f"[chunk-{batch_index}] Processed {batch_size} files in {batch_time:.1f}s "
                             f"({speed:.1f}/s); batch: ok={batch_succeeded}, err={batch_failed}, cache={batch_cache_hits}; "
                             f"total: {done}/{total} (ok={self.metrics['files_succeeded']}, err={self.metrics['files_failed']})"
@@ -489,6 +510,35 @@ class StereomapperPipeline:
                 .add_context("failed_files", self.metrics["files_failed"])
                 .add_context("chunk_size_final", self.chunk_size)
             )
+
+    def _init_parse_error_log(self) -> Optional[Path]:
+        try:
+            log_dir = Path("logs")
+            log_dir.mkdir(parents=True, exist_ok=True)
+            ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+            path = log_dir / f"parse_failures_{ts}.csv"
+            with path.open("w", newline="", encoding="utf-8") as handle:
+                writer = csv.writer(handle)
+                writer.writerow(["timestamp", "file_path", "stage", "error"])
+            logger.info("[logging] Parse error log: %s", path)
+            return path
+        except Exception as exc:
+            logger.warning("[logging] Failed to initialize parse error log: %s", exc)
+            return None
+
+    def _record_parse_errors(self, rows: list[tuple[str, str, str]]) -> None:
+        if not self._parse_error_log_path:
+            return
+        if not rows:
+            return
+        timestamp = datetime.now().isoformat(timespec="seconds")
+        try:
+            with self._parse_error_log_path.open("a", newline="", encoding="utf-8") as handle:
+                writer = csv.writer(handle)
+                for file_path, stage, error in rows:
+                    writer.writerow([timestamp, file_path, stage, error])
+        except Exception as exc:
+            logger.warning("[logging] Failed to write parse error log: %s", exc)
 
     def _generate_results(self, pipeline_pbar=None, allocated_percent=20) -> None:
         """Generate similarity results from processed molecules."""
@@ -593,15 +643,8 @@ class StereomapperPipeline:
         self._update_relationship_metrics()
 
         attempted = self.metrics["files_processed"]
-        skipped = self.metrics["files_skipped"]
-        successes = self.metrics["files_succeeded"]
         failures = self.metrics["files_failed"]
-        cache_rate = (self.metrics["cache_hits"] / successes * 100) if successes > 0 else 0.0
         relationship_total = self.metrics["relationship_totals"]
-        groups_processed = self.metrics["groups_processed"]
-        groups_skipped = self.metrics["groups_skipped"]
-        groups_failed = self.metrics["groups_failed"]
-        unique_groups = self.metrics["unique_inchikeys"]
 
         # Complete the progress bar
         if pipeline_pbar:
@@ -615,18 +658,7 @@ class StereomapperPipeline:
             time.sleep(0.5)
             pipeline_pbar.close()
 
-            # Print final summary after progress bar is closed
-            print(f"\n✅ Pipeline completed in {elapsed_time:.1f}s")
-            print(f"📦 Inputs attempted: {attempted:,} (skipped {skipped:,})")
-            print(f"📊 Successes: {successes:,} | Failures: {failures:,}")
-            if any((groups_processed, groups_skipped, groups_failed)):
-                print(
-                    f"🔗 Inchikey groups — processed {groups_processed:,}, "
-                    f"skipped {groups_skipped:,}, failed {groups_failed:,}"
-                )
-            print(f"🧮 Relationship rows: {relationship_total:,}")
-            print(f"🧾 Unique inchikeys observed: {unique_groups:,}")
-            print(f"💾 Cache hit rate: {cache_rate:.1f}%")
+            # Summary is logged at the CLI layer to avoid duplication
         else:
             summary_logger.info(f"[shutdown] Pipeline completed in {elapsed_time:.2f} seconds")
             self._log_final_metrics()
@@ -661,6 +693,10 @@ class StereomapperPipeline:
             return
 
         output_file = Path(output_path)
+        if not output_file.exists() and self.config.sqlite_output_path:
+            output_path = self.config.sqlite_output_path
+            output_file = Path(output_path)
+
         if not output_file.exists():
             return
 
@@ -747,24 +783,24 @@ class StereomapperPipeline:
 
     def _log_final_metrics(self) -> None:
         """Log final pipeline metrics with performance analysis."""
-        logger.info("=" * 60)
-        logger.info("PIPELINE METRICS")
-        logger.info("=" * 60)
-        logger.info(f"Files processed:     {self.metrics['files_processed']:,}")
-        logger.info(f"Files succeeded:     {self.metrics['files_succeeded']:,}")
-        logger.info(f"Files failed:        {self.metrics['files_failed']:,}")
-        logger.info(f"Files skipped:       {self.metrics['files_skipped']:,}")
-        logger.info(f"Cache hits:          {self.metrics['cache_hits']:,}")
-        logger.info(f"Processing time:     {self.metrics['processing_time']:.2f}s")
-        logger.info(f"Groups processed:    {self.metrics['groups_processed']:,}")
-        logger.info(f"Groups skipped:      {self.metrics['groups_skipped']:,}")
-        logger.info(f"Groups failed:       {self.metrics['groups_failed']:,}")
-        logger.info(f"Relationship rows:   {self.metrics['relationship_totals']:,}")
+        summary_logger.info("=" * 60)
+        summary_logger.info("PIPELINE METRICS")
+        summary_logger.info("=" * 60)
+        summary_logger.info(f"Files processed:     {self.metrics['files_processed']:,}")
+        summary_logger.info(f"Files succeeded:     {self.metrics['files_succeeded']:,}")
+        summary_logger.info(f"Files failed:        {self.metrics['files_failed']:,}")
+        summary_logger.info(f"Files skipped:       {self.metrics['files_skipped']:,}")
+        summary_logger.info(f"Cache hits:          {self.metrics['cache_hits']:,}")
+        summary_logger.info(f"Processing time:     {self.metrics['processing_time']:.2f}s")
+        summary_logger.info(f"Groups processed:    {self.metrics['groups_processed']:,}")
+        summary_logger.info(f"Groups skipped:      {self.metrics['groups_skipped']:,}")
+        summary_logger.info(f"Groups failed:       {self.metrics['groups_failed']:,}")
+        summary_logger.info(f"Relationship rows:   {self.metrics['relationship_totals']:,}")
 
         # Performance analysis
         if self.metrics["processing_time"] > 0:
             rate = self.metrics["files_processed"] / self.metrics["processing_time"]
-            logger.info(f"Processing rate:     {rate:.1f} files/second")
+            summary_logger.info(f"Processing rate:     {rate:.1f} files/second")
 
         if self.metrics["files_processed"] > 0:
             success_rate = (self.metrics["files_succeeded"] / self.metrics["files_processed"]) * 100
@@ -773,25 +809,25 @@ class StereomapperPipeline:
                 if self.metrics["files_succeeded"] > 0
                 else 0
             )
-            logger.info(f"Success rate:        {success_rate:.1f}%")
-            logger.info(f"Cache hit rate:      {cache_rate:.1f}%")
+            summary_logger.info(f"Success rate:        {success_rate:.1f}%")
+            summary_logger.info(f"Cache hit rate:      {cache_rate:.1f}%")
 
         class_counts = self.metrics.get("relationship_class_counts") or {}
         if class_counts:
-            logger.info("Relationship counts by classification:")
+            summary_logger.info("Relationship counts by classification:")
             for cls, count in sorted(class_counts.items()):
-                logger.info(f"  {cls}: {count:,}")
+                summary_logger.info(f"  {cls}: {count:,}")
 
         origin_counts = self.metrics.get("relationship_origin_counts") or {}
         if origin_counts:
-            logger.info("Relationship counts by origin:")
+            summary_logger.info("Relationship counts by origin:")
             for origin, count in sorted(origin_counts.items()):
-                logger.info(f"  {origin}: {count:,}")
+                summary_logger.info(f"  {origin}: {count:,}")
 
         # Resource usage
         self._memory_report("Final memory usage", detailed=True)
 
-        logger.info("=" * 60)
+        summary_logger.info("=" * 60)
 
     # Configuration helper methods
     def _get_chunk_size(self) -> int:

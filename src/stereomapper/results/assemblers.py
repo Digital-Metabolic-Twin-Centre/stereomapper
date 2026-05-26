@@ -104,17 +104,21 @@ def cluster_rows(rows: Iterable[Mapping]) -> Iterable[dict]:
                 members_json = json.dumps(member_ids) if member_count else None
                 members_hash = hashlib.sha256("\n".join(member_ids).encode("utf-8")).hexdigest()
 
-                yield ClusterRow({
-                    "inchikey_first": ik_first,
-                    "identity_key_strict": identity_key_strict,
-                    "is_undef_sru": 0,
-                    "is_def_sru": 1,
-                    "sru_repeat_count": k,  # undef=0, def=1
-                    "member_count": member_count,
-                    "members_json": members_json,
-                    "members_hash": members_hash,
-                    "member_ids": member_ids,
-                })
+                yield ClusterRow(
+                    {
+                        "inchikey_first": ik_first,
+                        "identity_key_strict": identity_key_strict,
+                        "is_undef_sru": 0,
+                        "is_def_sru": 1,
+                        "sru_repeat_count": k,  # undef=0, def=1
+                        "member_count": member_count,
+                        "members_json": members_json,
+                        "members_hash": members_hash,
+                        "member_ids": member_ids,
+                        "status": "passed",
+                        "error": None,
+                    }
+                )
             else:
                 # Multiple distinct defined counts: keep each separate; keep no-SRU separate
                 for k in ks:
@@ -124,17 +128,21 @@ def cluster_rows(rows: Iterable[Mapping]) -> Iterable[dict]:
                     members_json = json.dumps(member_ids) if member_count else None
                     members_hash = hashlib.sha256("\n".join(member_ids).encode("utf-8")).hexdigest()
 
-                    yield ClusterRow({
-                        "inchikey_first": ik_first,
-                        "identity_key_strict": identity_key_strict,
-                        "is_undef_sru": 0,
-                        "is_def_sru": 1,
-                        "sru_repeat_count": k,
-                        "member_count": member_count,
-                        "members_json": members_json,
-                        "members_hash": members_hash,
-                        "member_ids": member_ids,
-                    })
+                    yield ClusterRow(
+                        {
+                            "inchikey_first": ik_first,
+                            "identity_key_strict": identity_key_strict,
+                            "is_undef_sru": 0,
+                            "is_def_sru": 1,
+                            "sru_repeat_count": k,
+                            "member_count": member_count,
+                            "members_json": members_json,
+                            "members_hash": members_hash,
+                            "member_ids": member_ids,
+                            "status": "passed",
+                            "error": None,
+                        }
+                    )
 
                 if none_sru:
                     member_ids = sorted({f for m in none_sru for f in m["accession_curies"]})
@@ -142,7 +150,53 @@ def cluster_rows(rows: Iterable[Mapping]) -> Iterable[dict]:
                     members_json = json.dumps(member_ids) if member_count else None
                     members_hash = hashlib.sha256("\n".join(member_ids).encode("utf-8")).hexdigest()
 
-                    yield ClusterRow({
+                    yield ClusterRow(
+                        {
+                            "inchikey_first": ik_first,
+                            "identity_key_strict": identity_key_strict,
+                            "is_undef_sru": 0,
+                            "is_def_sru": 0,
+                            "sru_repeat_count": None,
+                            "member_count": member_count,
+                            "members_json": members_json,
+                            "members_hash": members_hash,
+                            "member_ids": member_ids,
+                            "status": "passed",
+                            "error": None,
+                        }
+                    )
+        else:
+            # No defined SRU at all in this (ik_first, smiles) group
+            if undef:
+                member_ids = sorted({f for m in undef for f in m["accession_curies"]})
+                member_count = len(member_ids)
+                members_json = json.dumps(member_ids) if member_count else None
+                members_hash = hashlib.sha256("\n".join(member_ids).encode("utf-8")).hexdigest()
+
+                yield ClusterRow(
+                    {
+                        "inchikey_first": ik_first,
+                        "identity_key_strict": identity_key_strict,
+                        "is_undef_sru": 1,
+                        "is_def_sru": 0,
+                        "sru_repeat_count": None,
+                        "member_count": member_count,
+                        "members_json": members_json,
+                        "members_hash": members_hash,
+                        "member_ids": member_ids,
+                        "status": "passed",
+                        "error": None,
+                    }
+                )
+
+            if none_sru:
+                member_ids = sorted({f for m in none_sru for f in m["accession_curies"]})
+                member_count = len(member_ids)
+                members_json = json.dumps(member_ids) if member_count else None
+                members_hash = hashlib.sha256("\n".join(member_ids).encode("utf-8")).hexdigest()
+
+                yield ClusterRow(
+                    {
                         "inchikey_first": ik_first,
                         "identity_key_strict": identity_key_strict,
                         "is_undef_sru": 0,
@@ -152,44 +206,10 @@ def cluster_rows(rows: Iterable[Mapping]) -> Iterable[dict]:
                         "members_json": members_json,
                         "members_hash": members_hash,
                         "member_ids": member_ids,
-                    })
-        else:
-            # No defined SRU at all in this (ik_first, smiles) group
-            if undef:
-                member_ids = sorted({f for m in undef for f in m["accession_curies"]})
-                member_count = len(member_ids)
-                members_json = json.dumps(member_ids) if member_count else None
-                members_hash = hashlib.sha256("\n".join(member_ids).encode("utf-8")).hexdigest()
-
-                yield ClusterRow({
-                    "inchikey_first": ik_first,
-                    "identity_key_strict": identity_key_strict,
-                    "is_undef_sru": 1,
-                    "is_def_sru": 0,
-                    "sru_repeat_count": None,
-                    "member_count": member_count,
-                    "members_json": members_json,
-                    "members_hash": members_hash,
-                    "member_ids": member_ids,
-                })
-
-            if none_sru:
-                member_ids = sorted({f for m in none_sru for f in m["accession_curies"]})
-                member_count = len(member_ids)
-                members_json = json.dumps(member_ids) if member_count else None
-                members_hash = hashlib.sha256("\n".join(member_ids).encode("utf-8")).hexdigest()
-
-                yield ClusterRow({
-                    "inchikey_first": ik_first,
-                    "identity_key_strict": identity_key_strict,
-                    "is_undef_sru": 0,
-                    "is_def_sru": 0,
-                    "sru_repeat_count": None,
-                    "member_count": member_count,
-                    "members_json": members_json,
-                    "members_hash": members_hash,
-                    "member_ids": member_ids,
-                })
+                        "status": "passed",
+                        "error": None,
+                    }
+                )
 
 
 def build_mols_for_reps(reps, logger):
@@ -199,12 +219,14 @@ def build_mols_for_reps(reps, logger):
       mol_by_cid: {int cid -> RDKit Mol}
       smi_by_cid: {int cid -> canonical SMILES}
       props_by_cid: {int cid -> (charge:int, is_radioactive:bool)}
-      fallback_candidates: {int cid -> SMILES string}
+    fallback_candidates: {int cid -> SMILES string}
+    error_by_cid: {int cid -> error message}
     """
     mol_by_cid = {}
     smi_by_cid = {}
     props_by_cid = {}
     fallback_candidates = {}
+    error_by_cid = {}
 
     for cid_raw, smi in reps:
         try:
@@ -212,10 +234,31 @@ def build_mols_for_reps(reps, logger):
         except Exception:
             cid = cid_raw  # keep as-is, but prefer ints consistently
 
-        mol = Chem.MolFromSmiles(smi, sanitize=True)
+        mol = None
+        parse_error = None
+        try:
+            mol = Chem.MolFromSmiles(smi, sanitize=True)
+        except Exception as exc:
+            parse_error = f"rdkit_smiles_exception: {exc}"
+
         if mol is None:
+            if not parse_error:
+                try:
+                    mol_unsanitized = Chem.MolFromSmiles(smi, sanitize=False)
+                    if mol_unsanitized is None:
+                        parse_error = "rdkit_smiles_parse_failed"
+                    else:
+                        try:
+                            Chem.SanitizeMol(mol_unsanitized)
+                        except Exception as exc:
+                            parse_error = f"rdkit_sanitize_failed: {exc}"
+                except Exception as exc:
+                    parse_error = f"rdkit_smiles_exception: {exc}"
+
             # Only add to fallback candidates, NOT to mol_by_cid
             fallback_candidates[cid] = smi
+            if parse_error:
+                error_by_cid[cid] = parse_error
             logger.warning(f"Added cluster {cid} with SMILES {smi} to fallback candidates.")
 
             # Still need to store properties and SMILES for fallback
@@ -241,7 +284,7 @@ def build_mols_for_reps(reps, logger):
     logger.info(
         f"Built {len(mol_by_cid)} valid molecules and {len(fallback_candidates)} fallback candidates"
     )
-    return mol_by_cid, smi_by_cid, props_by_cid, fallback_candidates
+    return mol_by_cid, smi_by_cid, props_by_cid, fallback_candidates, error_by_cid
 
 
 def _coerce_scalar(x):
