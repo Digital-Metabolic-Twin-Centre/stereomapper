@@ -74,6 +74,7 @@ class TestLoadClusterData:
             {"cluster1": "SMILES1"},
             {"cluster1": (0, False)},
             {},  # No fallback candidates
+            {},
         )
 
         with patch("stereomapper.comparison.compare.logger") as mock_logger:
@@ -93,6 +94,7 @@ class TestLoadClusterData:
             {"cluster1": "SMILES1", "cluster2": "SMILES2"},
             {"cluster1": (0, False), "cluster2": (1, True)},
             {"cluster3": Mock()},  # Fallback candidate
+            {"cluster3": "rdkit_smiles_parse_failed"},
         )
         mock_preload_pairs.return_value = [("cluster1", "cluster2")]
 

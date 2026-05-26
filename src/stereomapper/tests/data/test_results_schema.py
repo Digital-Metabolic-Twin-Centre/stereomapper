@@ -119,6 +119,8 @@ class TestTableCreation:
             "member_count",
             "members_json",
             "members_hash",
+            "status",
+            "error",
         ]
 
         actual_column_names = [col[1] for col in columns]
@@ -139,6 +141,8 @@ class TestTableCreation:
         assert column_types["member_count"] == "INTEGER"
         assert column_types["members_json"] == "TEXT"
         assert column_types["members_hash"] == "TEXT"
+        assert column_types["status"] == "TEXT"
+        assert column_types["error"] == "TEXT"
 
     def test_relationships_table_created(self, memory_db):
         """Test that relationships table is created with correct structure."""
@@ -398,6 +402,24 @@ class TestConstraints:
         """Test relationships table primary key constraint."""
         results_schema(memory_db)
 
+        # Insert clusters to satisfy foreign keys
+        memory_db.execute(
+            """
+            INSERT INTO clusters (
+                inchikey_first, identity_key_strict, member_count, members_hash
+            )
+            VALUES ('TEST001INCHIKEY', 'identity_1', 1, 'hash_1')
+        """
+        )
+        memory_db.execute(
+            """
+            INSERT INTO clusters (
+                inchikey_first, identity_key_strict, member_count, members_hash
+            )
+            VALUES ('TEST002INCHIKEY', 'identity_2', 1, 'hash_2')
+        """
+        )
+
         # Insert first relationship
         memory_db.execute(
             """
@@ -443,6 +465,8 @@ class TestConstraints:
         assert row[3] == 0  # is_undef_sru default
         assert row[4] == 0  # is_def_sru default
         assert row[6] == "none"  # sru_key generated from defaults
+        assert row[10] == "passed"  # status default
+        assert row[11] is None  # error default
 
 
 class TestSchemaRecreation:
@@ -496,6 +520,15 @@ class TestSchemaRecreation:
 
         memory_db.execute(
             """
+            INSERT INTO clusters (
+                inchikey_first, identity_key_strict, member_count, members_hash
+            )
+            VALUES ('TEST002INCHIKEY', 'identity_2', 1, 'hash_2')
+        """
+        )
+
+        memory_db.execute(
+            """
             INSERT INTO relationships (
                 cluster_a, cluster_b, cluster_a_members, cluster_b_members,
                 cluster_a_size, cluster_b_size, classification, classification_term_id, version_tag
@@ -509,7 +542,7 @@ class TestSchemaRecreation:
 
         # Verify data is preserved
         cursor = memory_db.execute("SELECT COUNT(*) FROM clusters")
-        assert cursor.fetchone()[0] == 1
+        assert cursor.fetchone()[0] == 2
 
         cursor = memory_db.execute("SELECT COUNT(*) FROM relationships")
         assert cursor.fetchone()[0] == 1

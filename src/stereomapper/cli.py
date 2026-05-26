@@ -150,13 +150,29 @@ def main() -> None:
         set_settings(settings)
 
         log_level = "DEBUG" if settings.debug_mode else "WARNING"
-        logger, _ = setup_logging(
-            log_dir=(
-                str(settings.logging.file_path.parent) if settings.logging.file_path else "./logs"
-            ),
-            console=settings.logging.console_output,
-            level=log_level,
-        )
+        try:
+            logger, summary_logger = setup_logging(
+                log_dir=(
+                    str(settings.logging.file_path.parent)
+                    if settings.logging.file_path
+                    else "./logs"
+                ),
+                console=settings.logging.console_output,
+                level=log_level,
+                log_path=(str(settings.logging.file_path) if settings.logging.file_path else None),
+            )
+        except TypeError as exc:
+            if "log_path" not in str(exc):
+                raise
+            logger, summary_logger = setup_logging(
+                log_dir=(
+                    str(settings.logging.file_path.parent)
+                    if settings.logging.file_path
+                    else "./logs"
+                ),
+                console=settings.logging.console_output,
+                level=log_level,
+            )
 
         if settings.debug_mode:
             logger.info("Configuration loaded successfully")
@@ -200,12 +216,12 @@ def main() -> None:
 
         res = run_mol_distance_2d_batch(cfg)
 
-        logger.info("Pipeline completed successfully!")
-        logger.info("Results summary:")
-        logger.info("  Processed: %s inputs", res.n_inputs)
-        logger.info("  Session pairs: %s", res.n_session_pairs)
-        logger.info("  Cross-cache pairs: %s", res.n_cross_pairs)
-        logger.info("  Output: %s", res.output_path or args.sqlite_output)
+        summary_logger.info("Pipeline completed successfully!")
+        summary_logger.info("Results summary:")
+        summary_logger.info("  Processed: %s inputs", res.n_inputs)
+        summary_logger.info("  Session pairs: %s", res.n_session_pairs)
+        summary_logger.info("  Cross-cache pairs: %s", res.n_cross_pairs)
+        summary_logger.info("  Output: %s", res.output_path or args.sqlite_output)
 
         sys.exit(0)
 

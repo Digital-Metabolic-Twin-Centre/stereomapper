@@ -17,6 +17,8 @@ CREATE TABLE clusters(
     member_count INTEGER NOT NULL,
     members_json TEXT,
     members_hash TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'passed',
+    error TEXT,
     UNIQUE(inchikey_first, identity_key_strict, sru_key)
 );
 

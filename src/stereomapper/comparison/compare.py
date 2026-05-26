@@ -145,9 +145,29 @@ def _load_cluster_data(
     if len(reps) < 2:
         return None
 
-    mol_by_cid, smi_by_cid, props_by_cid, fallback_candidates = assemblers.build_mols_for_reps(
-        reps, logger
-    )
+    (
+        mol_by_cid,
+        smi_by_cid,
+        props_by_cid,
+        fallback_candidates,
+        error_by_cid,
+    ) = assemblers.build_mols_for_reps(reps, logger)
+
+    if reps:
+        failed_ids = set(fallback_candidates.keys())
+        status_rows = []
+        for rep in reps:
+            cid = None
+            if isinstance(rep, (tuple, list)) and rep:
+                cid = rep[0]
+            if cid is None:
+                continue
+            if cid in failed_ids:
+                status_rows.append(("failed", error_by_cid.get(cid), cid))
+            else:
+                status_rows.append(("passed", None, cid))
+        if status_rows:
+            results_repo.update_cluster_statuses(results_db_path, status_rows)
 
     # COMPLETE THE FUNCTION:
     all_cids = set(mol_by_cid.keys()).union(set(fallback_candidates.keys()))

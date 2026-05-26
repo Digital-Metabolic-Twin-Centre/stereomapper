@@ -42,6 +42,8 @@ def temp_results_db():
             member_count INTEGER NOT NULL,
             members_json TEXT,
             members_hash TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'passed',
+            error TEXT,
             UNIQUE(inchikey_first, identity_key_strict, sru_key)
         )
     """
@@ -133,7 +135,7 @@ class TestBulkUpsertClusters:
         cursor = conn.execute(
             """
             SELECT inchikey_first, identity_key_strict, is_undef_sru, is_def_sru,
-                   sru_repeat_count, member_count, members_json, members_hash, sru_key
+                   sru_repeat_count, member_count, members_json, members_hash, status, error, sru_key
             FROM clusters ORDER BY cluster_id
         """
         )
@@ -149,6 +151,8 @@ class TestBulkUpsertClusters:
             2,
             '["mol1", "mol2"]',
             "hash1",
+            "passed",
+            None,
             "none",
         )
         assert results[1] == (
@@ -160,6 +164,8 @@ class TestBulkUpsertClusters:
             1,
             '["mol3"]',
             "hash2",
+            "passed",
+            None,
             "undef",
         )
         assert results[2] == (
@@ -171,6 +177,8 @@ class TestBulkUpsertClusters:
             1,
             '["mol4"]',
             "hash3",
+            "passed",
+            None,
             "def:3",
         )
 

@@ -53,9 +53,9 @@ def _backfill_relationship_members(cur: sqlite3.Cursor) -> None:
     relationship_member_rows = []
     for cluster_a, cluster_b, version_tag, cluster_a_members, cluster_b_members in rows:
         for member_curie in _member_list(cluster_a_members):
-            relationship_member_rows.append((cluster_a, cluster_b, version_tag, 'A', member_curie))
+            relationship_member_rows.append((cluster_a, cluster_b, version_tag, "A", member_curie))
         for member_curie in _member_list(cluster_b_members):
-            relationship_member_rows.append((cluster_a, cluster_b, version_tag, 'B', member_curie))
+            relationship_member_rows.append((cluster_a, cluster_b, version_tag, "B", member_curie))
 
     if relationship_member_rows:
         cur.executemany(
@@ -112,6 +112,8 @@ def results_schema(con: sqlite3.Connection) -> sqlite3.Connection:
                     member_count INTEGER NOT NULL,
                     members_json TEXT,
                     members_hash TEXT NOT NULL,
+                    status TEXT NOT NULL DEFAULT 'passed',
+                    error TEXT,
                     UNIQUE(inchikey_first, identity_key_strict, sru_key)
                 );
 
@@ -206,7 +208,20 @@ def results_schema(con: sqlite3.Connection) -> sqlite3.Connection:
             """
         )
 
+        _ensure_cluster_columns(cur)
+
         _backfill_cluster_members(cur)
         _backfill_relationship_members(cur)
 
     return con
+
+
+def _ensure_cluster_columns(cur: sqlite3.Cursor) -> None:
+    existing = {row[1] for row in cur.execute("PRAGMA table_info(clusters)").fetchall()}
+
+    if "status" not in existing:
+        cur.execute("ALTER TABLE clusters ADD COLUMN status TEXT NOT NULL DEFAULT 'passed'")
+    if "error" not in existing:
+        cur.execute("ALTER TABLE clusters ADD COLUMN error TEXT")
+
+    cur.execute("UPDATE clusters SET status = 'passed' WHERE status IS NULL")
