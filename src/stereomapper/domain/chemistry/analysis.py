@@ -87,6 +87,13 @@ class StereoAnalyser:
 
         specified = "Specified"
 
+        total_a = len(stereo1_info)
+        total_b = len(stereo2_info)
+        defined_a = sum(1 for info in stereo1_info if info.get("specified") == specified)
+        defined_b = sum(1 for info in stereo2_info if info.get("specified") == specified)
+        unspecified_a = total_a - defined_a
+        unspecified_b = total_b - defined_b
+
         results = {
             "total_stereo": 0,
             "total_tetra": 0,
@@ -97,9 +104,14 @@ class StereoAnalyser:
             "db_flips": 0,
             "unspecified": 0,
             "missing_centres": 0,
+            "defined_a": defined_a,
+            "defined_b": defined_b,
+            "total_a": total_a,
+            "total_b": total_b,
+            "unspecified_a": unspecified_a,
+            "unspecified_b": unspecified_b,
             "details": [],
         }
-
         matched_indices_b = set()
         matched_indices_a = set()
 

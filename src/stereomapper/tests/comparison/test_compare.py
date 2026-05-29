@@ -306,7 +306,7 @@ class TestProcessResult:
         assert result[1] == "cluster2"  # cid_b
         assert result[6] == "Enantiomers"  # classification
         assert result[7] == "SMRO:0005"  # classification ontology id
-        assert result[8] == 0.9  # score
+        assert result[9] == 0.9  # score
 
 
 class TestCompareClusterRelationships:

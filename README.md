@@ -229,7 +229,7 @@ Contains final identity mappings and relationship assignments.
 
 See `docs/sqlite_schema.sql` (machine-readable DDL) and `docs/sqlite_schema.md` (column descriptions) for the exact schema shared by all StereoMapper runs. Bundle these files whenever you redistribute `.sqlite` outputs.
 
-Each row in `relationships` now provides both the human-readable `classification` and a machine-actionable `classification_term_id` drawn from the StereoMapper Relationship Ontology (SMRO). The controlled vocabulary is published in `docs/ontology/relationship_terms.csv`.
+Each row in `relationships` now provides both the human-readable `classification` and a machine-actionable `classification_term_id` drawn from the StereoMapper Relationship Ontology (SMRO). The controlled vocabulary is published in `docs/ontology/relationship_terms.csv`. For `Stereo-resolution pairs`, `relationships.direction` indicates the more-resolved structure (`A_to_B` means `cluster_a` is more stereochemically resolved than `cluster_b`; `B_to_A` means the opposite). The field is NULL for symmetric relationships.
 
 Example molfiles are indexed in `examples/manifest.csv`, which records the provenance, checksum, and relationship class (plus SMRO identifier) for every file in the `examples/` tree. Include this manifest—and the Zenodo archive mentioned below—when sharing derived datasets so downstream users can audit provenance.
 

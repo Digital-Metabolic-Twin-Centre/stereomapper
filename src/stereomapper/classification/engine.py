@@ -20,6 +20,16 @@ logger, summary_logger = setup_logging(
 )
 
 
+def _resolution_direction(defined_a: int | None, defined_b: int | None) -> str | None:
+    if defined_a is None or defined_b is None:
+        return None
+    if defined_a > defined_b:
+        return "A_to_B"
+    if defined_b > defined_a:
+        return "B_to_A"
+    return None
+
+
 class RelationshipAnalyser:
     def __init__(self):
         self.classifier = StereochemicalClassifier()
@@ -525,6 +535,16 @@ class RelationshipAnalyser:
                         ik_stereo_layer_eq=ik_stereo_layer_eq,
                         ik_protonation_layer_eq=ik_protonation_layer_eq,
                     )
+                    defined_a = stereo_elements.get("defined_a")
+                    defined_b = stereo_elements.get("defined_b")
+                    direction = _resolution_direction(defined_a, defined_b)
+                    details = {
+                        "defined_a": defined_a,
+                        "defined_b": defined_b,
+                        "total_a": stereo_elements.get("total_a"),
+                        "total_b": stereo_elements.get("total_b"),
+                        "resolution_direction": direction,
+                    }
                     return _to_similarity_result(
                         StereoClassification.planar_vs_stereo(
                             stereo_score=conf.score,
@@ -536,6 +556,7 @@ class RelationshipAnalyser:
                             num_db_matches=num_db_matches,
                             num_db_flips=num_db_flips,
                             num_missing=num_missing,
+                            details=details,
                         )
                     )
             # elif StereochemicalClassifier.is_ambiguous(stereo_elements):
