@@ -229,6 +229,23 @@ def _is_valid_primary_result(result: Any) -> bool:
     return False
 
 
+def _direction_from_details(details: Any) -> str | None:
+    if not isinstance(details, dict):
+        return None
+    direction = details.get("resolution_direction")
+    if direction:
+        return direction
+    defined_a = details.get("defined_a")
+    defined_b = details.get("defined_b")
+    if defined_a is None or defined_b is None:
+        return None
+    if defined_a > defined_b:
+        return "A_to_B"
+    if defined_b > defined_a:
+        return "B_to_A"
+    return None
+
+
 def _analyze_pair(
     analyser: RelationshipAnalyser,
     fallback_analyser: InChIFallbackAnalyser,
@@ -419,6 +436,15 @@ def _process_result(
         if not extra_info:
             extra_info = getattr(res, "reason", None)
 
+    direction = None
+    if cls == "Stereo-resolution pairs":
+        res_details = None
+        if hasattr(res, "details"):
+            res_details = getattr(res, "details", None)
+        if not res_details and isinstance(res, dict):
+            res_details = res.get("details")
+        direction = _direction_from_details(res_details)
+
     classification_term_id = get_relationship_term_id(cls)
     if classification_term_id is None:
         logger.warning("[pair] no ontology term for classification '%s'", cls)
@@ -446,6 +472,7 @@ def _process_result(
         cluster_b_size,
         cls,
         classification_term_id,
+        direction,
         score,
         details_json,
         extra_info,

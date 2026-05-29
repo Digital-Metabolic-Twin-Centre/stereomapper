@@ -196,6 +196,37 @@ def _any_defined_signs_different(
     return tetra_different or db_different
 
 
+def _resolution_direction_from_inchi(inchi_a: str, inchi_b: str) -> tuple[str | None, dict]:
+    t_a, _m_a, _s_a = parse_tms_with_unknowns(inchi_a)
+    t_b, _m_b, _s_b = parse_tms_with_unknowns(inchi_b)
+    db_a = _extract_double_bond_stereo(inchi_a)
+    db_b = _extract_double_bond_stereo(inchi_b)
+
+    defined_a = sum(1 for v in t_a.values() if v in {"+", "-"}) + sum(
+        1 for v in db_a.values() if v in {"+", "-"}
+    )
+    defined_b = sum(1 for v in t_b.values() if v in {"+", "-"}) + sum(
+        1 for v in db_b.values() if v in {"+", "-"}
+    )
+
+    total_a = len(t_a) + len(db_a)
+    total_b = len(t_b) + len(db_b)
+
+    direction = None
+    if defined_a > defined_b:
+        direction = "A_to_B"
+    elif defined_b > defined_a:
+        direction = "B_to_A"
+
+    return direction, {
+        "defined_a": defined_a,
+        "defined_b": defined_b,
+        "total_a": total_a,
+        "total_b": total_b,
+        "resolution_direction": direction,
+    }
+
+
 class InChIFallbackAnalyser:
     """Fallback analyser using InChI layer comparison when alignment fails."""
 
@@ -651,6 +682,11 @@ class InChIFallbackAnalyser:
                 logger.info(
                     "Planar vs Stereo detected via fallback for pair (%s, %s)", cid_a, cid_b
                 )
+                direction, detail_payload = (None, {})
+                if layers_a_temp and layers_b_temp:
+                    direction, detail_payload = _resolution_direction_from_inchi(
+                        layers_a_temp.get("inchi", ""), layers_b_temp.get("inchi", "")
+                    )
                 conf = self._build_fallback_confidence(
                     "PLANAR_VS_STEREO",
                     charge_a,
@@ -666,6 +702,7 @@ class InChIFallbackAnalyser:
                         stereo_score=conf.score,
                         confidence=conf.as_dict(),
                         rmsd=None,
+                        details=detail_payload,
                         penalties={
                             "fallback_method": True,
                             "confidence_penalty": self.confidence_penalty,

@@ -47,6 +47,7 @@ StereoMapper stores canonical clusters and pairwise stereochemical relationships
 | `cluster_b_size` | INTEGER | Number of members in cluster B. |
 | `classification` | TEXT | Assigned stereochemical relationship (e.g., `Enantiomers`, `Diastereomers`, `Protomers`, `Stereo-resolution pairs`). |
 | `classification_term_id` | TEXT | SMRO identifier that maps each `classification` to a controlled vocabulary entry defined in `docs/ontology/relationship_terms.csv`. |
+| `direction` | TEXT | Directionality for `Stereo-resolution pairs`: `A_to_B` means `cluster_a` is more stereochemically resolved than `cluster_b`, `B_to_A` means the reverse; NULL for symmetric relationships. |
 | `score` | REAL | Aggregate confidence or ranking score for the classification. |
 | `score_details` | TEXT | JSON payload with per-feature scoring details. |
 | `extra_info` | TEXT | JSON payload with provenance/comments (e.g., warnings or conflict notes). |

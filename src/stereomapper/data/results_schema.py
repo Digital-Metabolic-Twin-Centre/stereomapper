@@ -135,6 +135,7 @@ def results_schema(con: sqlite3.Connection) -> sqlite3.Connection:
                     cluster_b_size  INTEGER NOT NULL,
                     classification  TEXT    NOT NULL,
                     classification_term_id TEXT,
+                    direction       TEXT,
                     score           REAL,
                     score_details   TEXT,
                     extra_info      TEXT,
@@ -208,7 +209,12 @@ def results_schema(con: sqlite3.Connection) -> sqlite3.Connection:
             """
         )
 
-        _ensure_cluster_columns(cur)
+        columns = {
+            row[1]
+            for row in cur.execute("PRAGMA table_info(relationships)").fetchall()
+        }
+        if "direction" not in columns:
+            cur.execute("ALTER TABLE relationships ADD COLUMN direction TEXT")
 
         _backfill_cluster_members(cur)
         _backfill_relationship_members(cur)

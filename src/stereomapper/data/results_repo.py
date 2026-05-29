@@ -275,7 +275,7 @@ def preload_cluster_sru(results_db_path, cluster_ids):
 
 
 def _coerce_relationship_row(row: tuple) -> tuple:
-    if len(row) == 12:
+    if len(row) == 13:
         return row
     if len(row) == 10:
         (
@@ -299,12 +299,43 @@ def _coerce_relationship_row(row: tuple) -> tuple:
             cluster_b_size,
             classification,
             None,
+            None,
             score,
             score_details,
             None,
             version_tag,
         )
-    raise ValueError(f"relationship rows must have 10 or 12 fields, got {len(row)}")
+    if len(row) == 12:
+        (
+            cluster_a,
+            cluster_b,
+            cluster_a_members,
+            cluster_b_members,
+            cluster_a_size,
+            cluster_b_size,
+            classification,
+            classification_term_id,
+            score,
+            score_details,
+            extra_info,
+            version_tag,
+        ) = row
+        return (
+            cluster_a,
+            cluster_b,
+            cluster_a_members,
+            cluster_b_members,
+            cluster_a_size,
+            cluster_b_size,
+            classification,
+            classification_term_id,
+            None,
+            score,
+            score_details,
+            extra_info,
+            version_tag,
+        )
+    raise ValueError(f"relationship rows must have 10, 12, or 13 fields, got {len(row)}")
 
 
 def batch_insert_cluster_pairs(results_db_path, rows):
@@ -325,12 +356,13 @@ def batch_insert_cluster_pairs(results_db_path, rows):
                     cluster_b_size,
                     classification,
                     classification_term_id,
+                    direction,
                     score,
                     score_details,
                     extra_info,
                     version_tag
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
             rows,
         )
