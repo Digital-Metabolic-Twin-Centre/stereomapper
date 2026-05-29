@@ -7,6 +7,7 @@ import sys
 import time
 from dataclasses import dataclass
 from datetime import datetime
+from importlib.metadata import PackageNotFoundError, version
 from itertools import islice, tee
 from pathlib import Path
 from typing import Optional
@@ -107,7 +108,7 @@ class StereomapperPipeline:
 
         # Initialize processors
         self.batch_processor = None
-        self.version_tag = "v1.0"
+        self.version_tag = self._resolve_version_tag()
         self._parse_error_log_path = self._init_parse_error_log()
 
         # Metrics tracking
@@ -126,6 +127,13 @@ class StereomapperPipeline:
             "relationship_class_counts": {},
             "relationship_origin_counts": {},
         }
+
+    @staticmethod
+    def _resolve_version_tag() -> str:
+        try:
+            return f"v{version('stereomapper')}"
+        except PackageNotFoundError:
+            return "v0.0.0"
 
     def run(self) -> PipelineResult:
         """Execute the complete pipeline."""
