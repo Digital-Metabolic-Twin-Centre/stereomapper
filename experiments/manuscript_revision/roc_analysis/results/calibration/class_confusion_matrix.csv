@@ -1,0 +1,6 @@
+true_class,diastereomer,enantiomer,protomer,stereo_resolution,unresolved
+diastereomer,2880,1,0,173,0
+enantiomer,27,1159,0,16,5
+protomer,0,0,3157,0,0
+stereo_resolution,2,0,0,4286,0
+unresolved,0,0,0,0,0
