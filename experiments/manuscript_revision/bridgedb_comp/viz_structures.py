@@ -201,12 +201,11 @@ def structure_to_publication_svg(
 
 def main():
 
-    chebi_14336 = "O=P(O)(O)OCC(O)CO"
-    chebi_15943 = "/home/jackmcgoldrick/Downloads/CHEBI_15943.mol" # use molfile instead for SRU
+    chebi_16349 = "/home/jackmcgoldrick/2026_05_20_full_chebi_vs_vmh_stereomapper/chebi_molfiles/CHEBI_16349.mol"
 
     structure_to_publication_svg(
-        structure=chebi_14336,
-        output_svg="chebi_14336.svg",
+        structure=chebi_16349,
+        output_svg="chebi_16349.svg",
         width=700,
         height=500,
         line_width=2.2,
@@ -215,16 +214,43 @@ def main():
         transparent_background=True,
     )
 
-    structure_to_publication_svg(
-        structure=chebi_15943,
-        output_svg="chebi_15943.svg",
-        width=700,
-        height=500,
-        line_width=2.2,
-        fixed_bond_length=38,
-        font_size=1.0,
-        transparent_background=True,
-    )
+    # # diff versions of L-alanine
+    # vmh_ala_l = "/media/JACK/repos/ctf/mets/molFiles/ala_L.mol"
+    # chebi_ala_L = "C[C@H](N)C(=O)O"
+    # hmdb_ala = "C[C@H](N)C(O)=O"
+
+    # structure_to_publication_svg(
+    #     structure=vmh_ala_l,
+    #     output_svg="vmh_ala_L.svg",
+    #     width=700,
+    #     height=500,
+    #     line_width=2.2,
+    #     fixed_bond_length=38,
+    #     font_size=1.0,
+    #     transparent_background=True,    
+    # )
+
+    # structure_to_publication_svg(
+    #     structure=chebi_ala_L,
+    #     output_svg="chebi_ala_L.svg",
+    #     width=700,
+    #     height=500,
+    #     line_width=2.2,
+    #     fixed_bond_length=38,
+    #     font_size=1.0,
+    #     transparent_background=True,    
+    # )
+
+    # structure_to_publication_svg(
+    #     structure=hmdb_ala,
+    #     output_svg="hmdb_ala.svg",
+    #     width=700,
+    #     height=500,
+    #     line_width=2.2,
+    #     fixed_bond_length=38,   
+    #     font_size=1.0,
+    #     transparent_background=True,
+    # )
 
     # chebi_192708 = "[2H]C([2H])(CC[C@H](N)C(=O)O)NC(N)=O"
     # chebi_16349 = "NC(=O)NCCC[C@H](N)C(=O)O"
