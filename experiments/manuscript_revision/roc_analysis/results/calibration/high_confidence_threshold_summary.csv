@@ -1,0 +1,5 @@
+target_predicted_class,n_predictions_for_class,n_correct_predictions,n_incorrect_predictions,observed_class_precision_without_threshold,auroc,auprc,target_precision,min_true_positives,selected_threshold,threshold_selection,tp,fp,tn,fn,n_high_confidence,high_confidence_fraction,precision,recall,sensitivity,specificity,false_positive_rate,false_negative_rate,f1,balanced_accuracy,youden_j
+enantiomer,1160,1159,1,0.9991379310344828,0.49482312338222606,0.9991289718486368,0.95,1,0.0,lowest threshold with precision >= 0.95,1159,1,0,0,1160,1.0,0.9991379310344828,1.0,1.0,0.0,1.0,0.0,0.9995687796463993,0.5,0.0
+diastereomer,2909,2880,29,0.9900309384668271,0.4856082375478927,0.989759316941283,0.95,1,0.0,lowest threshold with precision >= 0.95,2880,29,0,0,2909,1.0,0.9900309384668271,1.0,1.0,0.0,1.0,0.0,0.9949904992226637,0.5,0.0
+stereo_resolution,4475,4286,189,0.9577653631284916,0.7433306915341447,0.9814444916528795,0.95,1,0.0,lowest threshold with precision >= 0.95,4286,189,0,0,4475,1.0,0.9577653631284916,1.0,1.0,0.0,1.0,0.0,0.9784271201917589,0.5,0.0
+protomer,3157,3157,0,1.0,,,0.95,1,0.0,lowest threshold with precision >= 0.95,3157,0,0,0,3157,1.0,1.0,1.0,1.0,,,0.0,1.0,,
