@@ -1,11 +1,32 @@
 # StereoMapper: Clarifying Metabolite Identity Through Stereochemically Aware Relationship Assignment
 
-[![OS](https://img.shields.io/badge/OS-Linux%20%7C%20macOS-blue)]()
-[![Python](https://img.shields.io/badge/Python-%E2%89%A5%203.8-informational)]()
+[![OS](https://img.shields.io/badge/OS-Linux%20%7C%20macOS-blue)](#requirements)
+[![Python](https://img.shields.io/badge/Python-%E2%89%A5%203.9-informational)](#requirements)
+[![CI](https://github.com/Digital-Metabolic-Twin-Centre/stereomapper/actions/workflows/ci.yml/badge.svg)](https://github.com/Digital-Metabolic-Twin-Centre/stereomapper/actions/workflows/ci.yml)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
+[![DOI](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.19251670-blue)](https://doi.org/10.5281/zenodo.19251670)
 
 ## Overview
 
-StereoMapper is a stereochemistry-aware metabolite mapping pipeline that classifies molecular relationships (e.g., enantiomers, diastereomers, protomers) across biochemical databases. It provides high-resolution identity mapping to support genome-scale metabolic model curation.
+StereoMapper is a stereochemistry-aware metabolite mapping pipeline that classifies molecular relationships (e.g., enantiomers, diastereomers, protomers) across biochemical databases. It provides high-resolution identity mapping to support genome-scale metabolic model curation. It has been benchmarked on curated control datasets and applied at scale to 1.3M+ molecular structures from major metabolic databases — see [Citation](#citation) for the full evaluation.
+
+If StereoMapper is useful in your work, please [cite it](#citation).
+
+---
+
+## Table of contents
+
+- [Key features](#key-features)
+- [Repository structure](#repository-structure)
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [Quickstart](#quickstart)
+- [Configuration options](#configuration-options)
+- [Usage](#usage)
+- [Outputs](#outputs)
+- [Citation](#citation)
+- [Community](#community)
+- [Contact](#contact)
 
 ---
 ## Key features
@@ -64,6 +85,15 @@ flowchart LR
 ├── pyproject.toml # Python package metadata/deps
 └── uv.lock # uv lockfile
 ```
+
+---
+
+## Requirements
+
+- **OS:** Linux or macOS (not currently tested on Windows).
+- **Python:** ≥ 3.9 (CI runs against 3.10, 3.11, and 3.12).
+- **Cheminformatics toolkits:** [RDKit](https://www.rdkit.org/) and [Open Babel](https://openbabel.org/) are pulled in automatically as pinned wheels (`rdkit==2025.3.3`, `openbabel-wheel==3.1.1.22`) when you `pip`/`uv` install the package — no separate system install is needed. If you hit build errors on an unusual platform, use the pinned [Conda environment](#reproducible-environment) instead.
+- **Scale:** designed for large corpora — the accompanying [paper](#citation) applied StereoMapper to 1.3M+ structures, using the structure cache to accelerate re-runs.
 
 ---
 
@@ -174,32 +204,8 @@ sqlite3 results/enantiomer_results.sqlite '.tables'
 sqlite3 results/enantiomer_results.sqlite 'SELECT * FROM relationships;'
 ```
 
-## Usage - run on all example molfiles recursively
-```bash
-stereomapper run --input-dir examples --sqlite-output results/all_results.sqlite -R
+## Configuration options
 
-# query clusters (equivalence)
-sqlite3 results/all_results.sqlite 'SELECT * FROM clusters;'
-# query all relationships
-sqlite3 results/all_results.sqlite 'SELECT * FROM relationships;'
-```
-
-### Common patterns
-```bash
-# specify directory + recursion
-stereomapper run --input-dir examples/ --recursive --sqlite-output all_results2.sqlite
-
-# specify a location to store the structure cache instead of the default location
-stereomapper run --input-dir examples/diastereomer_files --cache-path results/cache/diastereomer_cache.sqlite --sqlite-output diastereomer_results.sqlite
-
-# specify to create a fresh cache at the specified path (can also create fresh cache at default by omitting the path argument)
-stereomapper run --input_dir examples/protomer_files --cache-path results/cache/prtomer_cache.sqlite --sqlite-output protomer_results.sqlite --fresh-cache
-
-# export results as a single spreadsheet workbook with 4 sheets
-stereomapper run --input-dir examples/enantiomer_files --sqlite-output results/enantiomer_results.xlsx --output-format csv
-```
-
-### Configuration Options
 | Parameter | Description | Default |
 |:----------:|:-----------:|:---------:|
 | `--input` | Python list of input files |  |
@@ -218,18 +224,55 @@ Other options specific to performance and debugging can be found using the follo
 stereomapper run --help
 ```
 
+## Usage
+
+Run recursively over all example molfiles:
+```bash
+stereomapper run --input-dir examples --sqlite-output results/all_results.sqlite -R
+
+# query clusters (equivalence)
+sqlite3 results/all_results.sqlite 'SELECT * FROM clusters;'
+# query all relationships
+sqlite3 results/all_results.sqlite 'SELECT * FROM relationships;'
+```
+
+### Common patterns
+```bash
+# specify directory + recursion
+stereomapper run --input-dir examples/ --recursive --sqlite-output all_results2.sqlite
+
+# specify a location to store the structure cache instead of the default location
+stereomapper run --input-dir examples/diastereomer_files --cache-path results/cache/diastereomer_cache.sqlite --sqlite-output diastereomer_results.sqlite
+
+# specify to create a fresh cache at the specified path (can also create fresh cache at default by omitting the path argument)
+stereomapper run --input-dir examples/protomer_files --cache-path results/cache/protomer_cache.sqlite --sqlite-output protomer_results.sqlite --fresh-cache
+
+# export results as a single spreadsheet workbook with 4 sheets
+stereomapper run --input-dir examples/enantiomer_files --sqlite-output results/enantiomer_results.xlsx --output-format csv
+```
+
 ## Outputs
 
-StereoMapper writees two SQLite databases:
-- **(1) Structure cache** (e.g., `.cache/structures.sqlite)
-Caches canonicalised, normalised structures for reuse.
+StereoMapper writes two SQLite databases:
 
-- **(2) Output database** (e.g., results/run1.sqlite)
-Contains final identity mappings and relationship assignments.
+- **(1) Structure cache** (e.g., `.cache/structures.sqlite`) — caches canonicalised, normalised structures for reuse.
+- **(2) Output database** (e.g., `results/run1.sqlite`) — contains final identity mappings and relationship assignments.
 
 See `docs/sqlite_schema.sql` (machine-readable DDL) and `docs/sqlite_schema.md` (column descriptions) for the exact schema shared by all StereoMapper runs. Bundle these files whenever you redistribute `.sqlite` outputs.
 
-Each row in `relationships` now provides both the human-readable `classification` and a machine-actionable `classification_term_id` drawn from the StereoMapper Relationship Ontology (SMRO). The controlled vocabulary is published in `docs/ontology/relationship_terms.csv`. For `Stereo-resolution pairs`, `relationships.direction` indicates the more-resolved structure (`A_to_B` means `cluster_a` is more stereochemically resolved than `cluster_b`; `B_to_A` means the opposite). The field is NULL for symmetric relationships.
+### Classification & ontology
+
+Each row in `relationships` provides both the human-readable `classification` and a machine-actionable `classification_term_id` drawn from the StereoMapper Relationship Ontology (SMRO). The controlled vocabulary is published in `docs/ontology/relationship_terms.csv`. For `Stereo-resolution pairs`, `relationships.direction` indicates the more-resolved structure (`A_to_B` means `cluster_a` is more stereochemically resolved than `cluster_b`; `B_to_A` means the opposite). The field is NULL for symmetric relationships.
+
+**Example `relationships` rows:**
+
+| cluster_a | cluster_b | classification | classification_term_id | direction | score |
+| :---: | :---: | :---: | :---: | :---: | :---: |
+| 12 | 47 | Enantiomers | SMRO:0000012 | NULL | 96 |
+| 12 | 88 | Diastereomers | SMRO:0000015 | NULL | 91 |
+| 47 | 103 | Stereo-resolution pairs | SMRO:0000021 | A_to_B | 84 |
+
+### Provenance
 
 Example molfiles are indexed in `examples/manifest.csv`, which records the provenance, checksum, and relationship class (plus SMRO identifier) for every file in the `examples/` tree. Include this manifest—and the Zenodo archive mentioned below—when sharing derived datasets so downstream users can audit provenance.
 
@@ -244,7 +287,7 @@ ORDER BY COUNT(*) DESC;
 -- Enantiomer pairs with high confidence
 SELECT *
 FROM relationships
-WHERE classification = 'Enantiomers' and confidence >= 90
+WHERE classification = 'Enantiomers' and score >= 90
 LIMIT 50;
 
 -- Check which clusters contain more than one member (considered duplicates if testing on single database)
@@ -254,10 +297,28 @@ WHERE member_count > 1
 ORDER BY COUNT(*) DESC;
 ```
 
-## Paper
+## Citation
+
 The pre-print of the paper can be found in bioRxiv at the following DOI:
 
 [McGoldrick J. et al. StereoMapper: Clarifying Metabolite Identity Through Stereochemically Aware Relationship Assignment. 2025.](https://doi.org/10.64898/2025.12.09.693222)
+
+If you use StereoMapper in your work, please cite it:
+
+```bibtex
+@article{mcgoldrick2025stereomapper,
+  title   = {StereoMapper: Clarifying Metabolite Identity Through Stereochemically Aware Relationship Assignment},
+  author  = {McGoldrick, Jack and Pagni, Marco and Alwer, Saleh and Cooney, Joanne and Makosa, Natalia
+             and Niknejad, Anne and Moretti, S{\'e}bastien and Murphy, Jadzia and Martinelli, Filippo
+             and Bridge, Alan and Thiele, Ines and Fleming, Ronan M. T.},
+  year    = {2025},
+  journal = {bioRxiv},
+  doi     = {10.64898/2025.12.09.693222},
+  url     = {https://doi.org/10.64898/2025.12.09.693222}
+}
+```
+
+Full structured metadata (including all author ORCIDs) is available in [`CITATIONS.cff`](CITATIONS.cff).
 
 ## Community
 - See [`CONTRIBUTING.md`](CONTRIBUTING.md) for development workflow, testing, and data-submission guidelines.
@@ -265,7 +326,9 @@ The pre-print of the paper can be found in bioRxiv at the following DOI:
 
 ## Contact
 
-For questions:
+For bug reports and feature requests, please use [GitHub Issues](https://github.com/Digital-Metabolic-Twin-Centre/stereomapper/issues) so the discussion is visible to other users.
+
+For other questions, contact:
 
 **Jack McGoldrick**
 j.mcgoldrick9@universityofgalway.ie
