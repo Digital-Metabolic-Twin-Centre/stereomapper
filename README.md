@@ -39,15 +39,20 @@ If StereoMapper is useful in your work, please [cite it](#citation).
 
 ```mermaid
 flowchart LR
-    A[Molfile inputs / directories] --> B[Canonicalisation & normalisation]
-    B --> C[Pairwise comparison & stereo checks]
-    C --> D[Relationship classification + confidence scoring]
-    D --> E[(SQLite: Results)]
-    B --> F[(SQLite: Structure Cache)]
+    A[Molfile inputs / directories] --> B{Already in cache?}
+    B -- yes --> D[(SQLite: Structure Cache)]
+    B -- no --> C[Canonicalise & normalise<br/>RDKit / OpenBabel]
+    C --> D
+    D --> E[Cluster into equivalent structures]
+    E --> F[(SQLite: Results - clusters)]
+    E --> G[Pairwise cluster comparison:<br/>relationship classification + confidence scoring]
+    G --> H[(SQLite: Results - relationships)]
+    H -.->|optional| I[CSV / xlsx workbook]
 
     style A fill:#d6ebff,stroke:#3399FF,stroke-width:2px
-    style E fill:#e6ffe6,stroke:#3a3,stroke-width:2px
+    style D fill:#e6ffe6,stroke:#3a3,stroke-width:2px
     style F fill:#e6ffe6,stroke:#3a3,stroke-width:2px
+    style H fill:#e6ffe6,stroke:#3a3,stroke-width:2px
 ```
 
 ## Repository Structure
