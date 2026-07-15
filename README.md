@@ -49,10 +49,10 @@ flowchart LR
     G --> H[(SQLite: Results - relationships)]
     H -.->|optional| I[CSV / xlsx workbook]
 
-    style A fill:#d6ebff,stroke:#3399FF,stroke-width:2px
-    style D fill:#e6ffe6,stroke:#3a3,stroke-width:2px
-    style F fill:#e6ffe6,stroke:#3a3,stroke-width:2px
-    style H fill:#e6ffe6,stroke:#3a3,stroke-width:2px
+    classDef inputNode fill:#cfe3fc,stroke:#1f6feb,stroke-width:2px,color:#08306b;
+    classDef dbNode fill:#d3f2d3,stroke:#2f9e44,stroke-width:2px,color:#0b3d0b;
+    class A inputNode
+    class D,F,H dbNode
 ```
 
 ## Repository Structure
