@@ -1,0 +1,25 @@
+{
+  "config_version": 1,
+  "inputs": {
+    "extract_dir": "",
+    "stereomapper_db": "",
+    "version_tag": "",
+    "baseline": "",
+    "baseline_version": "",
+    "checksums": {}
+  },
+  "scope": {
+    "rhea_status": {
+      "include": ["approved", "preliminary"],
+      "exclude": ["obsolete"]
+    }
+  },
+  "cofactors": {"list": "builtin:cofactors-v1"},
+  "alignment": {"version": "align-v1", "exact_max_side": 16},
+  "retrieval": {
+    "version": "retrieve-v1",
+    "routes": ["shared_cluster", "related_cluster", "xref"],
+    "cap": null
+  },
+  "ranking": {"version": "rank-v1"}
+}

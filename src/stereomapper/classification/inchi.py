@@ -1,8 +1,10 @@
 """InChI based classification fallback analyser."""
 
+from __future__ import annotations
+
 import re
 import traceback
-from typing import Any, Optional
+from typing import Any
 
 from rdkit import Chem  # pylint: disable=no-member
 
@@ -236,7 +238,7 @@ class InChIFallbackAnalyser:
 
     def _extract_inchi_layers(
         self, mol: Chem.Mol
-    ) -> Optional[dict[str, str]]:  # pylint: disable=no-member
+    ) -> dict[str, str] | None:  # pylint: disable=no-member
         """Extract selected InChI layers from a mol object (via external InChI)."""
         try:
             inchi = Chem.MolToInchi(mol)  # returns std inchi from rdkit
@@ -275,7 +277,7 @@ class InChIFallbackAnalyser:
             logger.warning("Failed to extract InChI layers: %s", e)
             return None
 
-    def _get_inchikey_layers(self, mol: Chem.Mol) -> Optional[dict[str, str]]:
+    def _get_inchikey_layers(self, mol: Chem.Mol) -> dict[str, str] | None:
         """Get InChIKey blocks from a molfile path."""
         try:
             inchikey = Chem.MolToInchiKey(mol)  # returns std inchikey from rdkit
@@ -459,7 +461,7 @@ class InChIFallbackAnalyser:
             logger.error("Traceback: %s", traceback.format_exc())
             return "STEREO_UNDEFINED"
 
-    def _compare_full_inchi_stereochemistry(self, molfile_a: str, molfile_b: str) -> Optional[str]:
+    def _compare_full_inchi_stereochemistry(self, molfile_a: str, molfile_b: str) -> str | None:
         try:
             la = self._extract_inchi_layers(molfile_a)
             lb = self._extract_inchi_layers(molfile_b)
@@ -520,7 +522,7 @@ class InChIFallbackAnalyser:
 
     def analyze_relationship_fallback(
         self, mol_a, mol_b, charge_a, charge_b, cid_a: str = "", cid_b: str = ""
-    ) -> Optional[SimilarityResult]:
+    ) -> SimilarityResult | None:
         """
         Note: ensure mol_a and mol_b are *molfile paths* for ChemistryOperations.*_software calls,
         or wrap RDKit mols into temp molfiles before calling.
