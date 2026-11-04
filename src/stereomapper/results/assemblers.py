@@ -1,11 +1,10 @@
 # result/assemblers.py
-from __future__ import annotations
-
 import hashlib
 import json
 from collections import defaultdict
 from collections.abc import Iterable, Mapping
 from pathlib import Path
+from typing import Optional
 
 from rdkit import Chem
 
@@ -441,9 +440,9 @@ def hash_file(path):
 def make_molecule_key(
     *,
     std_version: str,
-    inchikey_full: str | None = None,
-    isomeric_smiles: str | None = None,
-    formal_charge: int | None = None,
+    inchikey_full: Optional[str] = None,
+    isomeric_smiles: Optional[str] = None,
+    formal_charge: Optional[int] = None,
 ) -> str:
     base = inchikey_full or isomeric_smiles
     if not base:

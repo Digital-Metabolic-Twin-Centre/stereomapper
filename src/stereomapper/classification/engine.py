@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from rdkit import Chem
 
 from stereomapper.classification import StereochemicalClassifier
