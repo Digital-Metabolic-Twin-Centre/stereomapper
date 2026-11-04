@@ -302,21 +302,8 @@ WHERE member_count > 1
 ORDER BY COUNT(*) DESC;
 ```
 
-## Reaction reconciliation (downstream)
+## Citation
 
-`stereomapper reconcile` uses StereoMapper's metabolite relationships to propose VMH–Rhea
-reaction mappings for curator review. Proposals are a review queue: only mappings a curator
-accepts are exported for genome-scale metabolic model use.
-
-```bash
-stereomapper reconcile propose --config pilot_config.json --out runs/pilot-01
-stereomapper reconcile review-workbook --run runs/pilot-01 --out review.xlsx
-```
-
-See [`docs/reaction_reconciliation.md`](docs/reaction_reconciliation.md) for inputs, outputs,
-subsystem flags, curation, and benchmarking.
-
-## Paper
 The pre-print of the paper can be found in bioRxiv at the following DOI:
 
 [McGoldrick J. et al. StereoMapper: Clarifying Metabolite Identity Through Stereochemically Aware Relationship Assignment. 2025.](https://doi.org/10.64898/2025.12.09.693222)

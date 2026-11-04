@@ -1,7 +1,5 @@
 """Lookup helpers for StereoMapper relationship ontology terms."""
 
-from __future__ import annotations
-
 from dataclasses import dataclass
 
 
@@ -49,8 +47,3 @@ def get_relationship_term(classification: str | None) -> RelationshipTerm | None
     if not term_id or classification is None:
         return None
     return RelationshipTerm(label=str(classification).strip(), term_id=term_id)
-
-
-def relationship_term_table() -> dict[str, str]:
-    """Copy of the label -> SMRO term ID table (used to pin the vocabulary in run manifests)."""
-    return dict(_RELATIONSHIP_TERM_IDS)

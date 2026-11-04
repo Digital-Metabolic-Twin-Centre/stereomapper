@@ -1,10 +1,8 @@
-from __future__ import annotations
-
 import json
 import os
 import sqlite3
 import threading
-from typing import Any
+from typing import Any, Optional
 
 from stereomapper.classification import InChIFallbackAnalyser, RelationshipAnalyser
 from stereomapper.data import results_repo
@@ -140,7 +138,7 @@ def _clear_existing_relationships_for_clusters(
 
 def _load_cluster_data(
     results_db_path: str, inchikey_first: str, version_tag: str
-) -> tuple[dict, list, set] | None:
+) -> Optional[tuple[dict, list, set]]:
     """Load and validate cluster data."""
     reps = results_repo.fetch_cluster_reps_for_inchikey(results_db_path, inchikey_first)
 
@@ -257,7 +255,7 @@ def _analyze_pair(
     sru_by_cid: dict,
     cid_a: str,
     cid_b: str,
-) -> Any | None:
+) -> Optional[Any]:
     """Analyze relationship between two clusters with fallback support."""
 
     # Get molecules and properties
@@ -400,7 +398,7 @@ def _process_result(
     cluster_b_members: list[str],
     cluster_a_size: int,
     cluster_b_size: int,
-) -> tuple | None:
+) -> Optional[tuple]:
     """Process analysis result into database format."""
     if res is None:
         pid = os.getpid()
