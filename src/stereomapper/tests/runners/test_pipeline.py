@@ -1,5 +1,6 @@
 import os
 import tempfile
+from importlib.metadata import version
 from pathlib import Path
 from unittest.mock import MagicMock, Mock, patch
 
@@ -88,7 +89,7 @@ class TestStereomapperPipeline:
         assert pipeline.config == basic_config
         assert pipeline.start_time is None
         assert pipeline.cache_conn is None
-        assert pipeline.version_tag == "v1.0"
+        assert pipeline.version_tag == f"v{version('stereomapper')}"
         assert pipeline.metrics["files_processed"] == 0
 
     @patch("stereomapper.runners.pipeline.psutil")
