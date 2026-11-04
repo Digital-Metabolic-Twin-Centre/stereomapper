@@ -1,8 +1,9 @@
 """Chemistry validation operations."""
 
+from __future__ import annotations
+
 import re
 from pathlib import Path
-from typing import Optional
 
 from rdkit import Chem
 
@@ -30,7 +31,7 @@ class ChemistryValidator:
     """Chemistry validation and detection operations."""
 
     @staticmethod
-    def detect_charge_from_molfile(molfile_path: str) -> Optional[int]:
+    def detect_charge_from_molfile(molfile_path: str) -> int | None:
         """Detect formal charge from molfile using RDKit."""
         try:
             mol = Chem.MolFromMolFile(molfile_path, sanitize=True)

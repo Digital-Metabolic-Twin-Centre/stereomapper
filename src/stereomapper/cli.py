@@ -1,5 +1,7 @@
 """Updated CLI with configuration management."""
 
+from __future__ import annotations
+
 import argparse
 import logging
 import sys
@@ -10,6 +12,7 @@ from stereomapper.config.loader import configure_from_cli
 from stereomapper.config.settings import get_settings, set_settings
 from stereomapper.domain.chemistry.validation import ChemistryValidator
 from stereomapper.domain.exceptions import ConfigurationError
+from stereomapper.reconciliation import cli as reconcile_cli
 from stereomapper.runners.pipeline import run_mol_distance_2d_batch
 from stereomapper.utils.logging import setup_logging
 
@@ -134,12 +137,18 @@ def build_parser() -> argparse.ArgumentParser:
         help="Write logs to file instead of console.",
     )
 
+    reconcile_cli.register(sub)
+
     return parser
 
 
-def main() -> None:
+def main(argv: list[str] | None = None) -> None:
     """Main entry point for the StereoMapper CLI."""
-    args = build_parser().parse_args()
+    args = build_parser().parse_args(argv)
+
+    if args.cmd == "reconcile":
+        logging.basicConfig(level=logging.WARNING, format="%(levelname)s %(message)s")
+        sys.exit(reconcile_cli.run(args))
 
     if args.cmd != "run":
         logging.error("Unknown command: %s", args.cmd)

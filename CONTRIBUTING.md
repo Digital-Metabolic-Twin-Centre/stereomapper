@@ -21,9 +21,11 @@ Thanks for helping improve StereoMapper! This project benefits from contribution
 
 ## Coding Standards
 - **Formatting / linting**: run `black`, `ruff`, and `isort` (configured for 100-character lines). `pre-commit` will enforce these on staged files.
-- **Typing**: the repo enables strict `mypy` (Python 3.11). Keep new modules type-annotated and fix type errors.
-- **Testing**: add or update `pytest` tests (`tests/` by default). Ensure `pytest -ra` passes before opening a PR.
+- **Typing**: the repo enables strict `mypy`. Keep new modules type-annotated and fix type errors. Note that `[tool.mypy] python_version` in `pyproject.toml` is 3.11, above the supported minimum of 3.9; check new code with `mypy --python-version 3.9` too.
+- **Testing**: add or update `pytest` tests under `src/stereomapper/tests/`. Ensure `pytest -ra` passes before opening a PR.
 - **Performance**: large datasets can stress memory and disk; include benchmarks or notes when changing workflows.
+- **Python version**: keep code compatible with `requires-python` in `pyproject.toml` (currently 3.9). Use `from __future__ import annotations` in modules that use `X | Y` annotations, and avoid 3.10+ syntax and APIs.
+- **Reaction reconciliation**: tests live in `src/stereomapper/tests/reconciliation/`. When alignment, retrieval, ranking, the cofactor list, or output files change behaviour, bump the matching version string (`align-v1`, `retrieve-v1`, `rank-v1`, `cofactors-v1`, `reconcile-out-v1`) and update [`docs/reaction_reconciliation.md`](docs/reaction_reconciliation.md).
 
 ## Submitting Changes
 1. Create a feature branch (`feature/<topic>`).

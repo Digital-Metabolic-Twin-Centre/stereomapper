@@ -1,7 +1,9 @@
+from __future__ import annotations
+
 import logging
 from abc import ABC
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -13,9 +15,9 @@ class StereomapperError(Exception, ABC):
         self,
         message: str,
         *,
-        error_code: Optional[str] = None,
-        context: Optional[dict[str, Any]] = None,
-        suggestions: Optional[list[str]] = None,
+        error_code: str | None = None,
+        context: dict[str, Any] | None = None,
+        suggestions: list[str] | None = None,
         recoverable: bool = False,
     ):
         super().__init__(message)
@@ -25,7 +27,7 @@ class StereomapperError(Exception, ABC):
         self.suggestions: list[str] = suggestions or []
         self.recoverable = recoverable
         self.timestamp = datetime.now()
-        self.config_field: Optional[str] = None  # to be set when relevant
+        self.config_field: str | None = None  # to be set when relevant
 
     def _get_default_error_code(self) -> str:
         # sensible default; subclasses should override when needed
@@ -96,8 +98,8 @@ class ExternalToolError(ResourceError):
         self,
         message: str,
         *,
-        tool_name: Optional[str] = None,
-        command: Optional[str] = None,
+        tool_name: str | None = None,
+        command: str | None = None,
         **kwargs,
     ):
         super().__init__(message, **kwargs)
