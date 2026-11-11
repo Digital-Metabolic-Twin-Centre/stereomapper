@@ -7,6 +7,7 @@ from typing import Any, Optional
 from stereomapper.classification import InChIFallbackAnalyser, RelationshipAnalyser
 from stereomapper.data import results_repo
 from stereomapper.domain.relationship_terms import get_relationship_term_id
+from stereomapper.models.stereo_classification import StereoClass
 from stereomapper.results import assemblers
 from stereomapper.utils.logging import setup_logging
 from stereomapper.utils.suppress import setup_clean_logging
@@ -17,6 +18,9 @@ logger, summary_logger = setup_logging(
     console=True,
     level="WARNING",
 )
+
+# Coding errors (e.g. a call-signature mismatch); these must not trigger the InChI fallback
+_PROGRAMMING_ERRORS = (TypeError, AttributeError, NameError)
 
 
 def _normalize_member_identifier(member: Any) -> str:
@@ -213,8 +217,9 @@ def _is_valid_primary_result(result: Any) -> bool:
         # print(f"DEBUG _is_valid_primary_result: FAILED - explicit failure case: {classification}")
         return False
 
-    # Check if it's a "No classification" case (the only enum value that should trigger fallback)
-    if classification == "No classification":  # StereoClass.NO_CLASSIFICATION.value
+    # Check if it's a no-classification case ("Unclassified", SMRO:0008), the only enum value
+    # that should trigger fallback
+    if classification == StereoClass.NO_CLASSIFICATION.value:
         # print(f"DEBUG _is_valid_primary_result: FAILED - no classification available")
         return False
 
@@ -307,8 +312,8 @@ def _analyze_pair(
                 charge_b,
                 cid1=cid_a,
                 cid2=cid_b,
-                isRadio1=is_radio_a,
-                isRadio2=is_radio_b,
+                is_radio1=is_radio_a,
+                is_radio2=is_radio_b,
                 has_sru1=has_sru_a,
                 has_sru2=has_sru_b,
                 is_undef_sru1=is_undef_sru_a,
@@ -336,6 +341,13 @@ def _analyze_pair(
                 summary_logger.info(
                     f"[compare] primary analysis returned invalid result for clusters {cid_a} vs {cid_b}"
                 )
+        except _PROGRAMMING_ERRORS:
+            logger.exception(
+                "[compare] programming error in primary analysis for clusters %s vs %s",
+                cid_a,
+                cid_b,
+            )
+            raise
         except Exception as e:
             summary_logger.info(
                 f"DEBUG _analyze_pair: Primary analysis EXCEPTION for clusters {cid_a} vs {cid_b}: {e}"
