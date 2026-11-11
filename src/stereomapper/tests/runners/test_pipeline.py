@@ -1,6 +1,6 @@
 import os
 import tempfile
-from importlib.metadata import version
+from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 from unittest.mock import MagicMock, Mock, patch
 
@@ -91,6 +91,20 @@ class TestStereomapperPipeline:
         assert pipeline.cache_conn is None
         assert pipeline.version_tag == f"v{version('stereomapper')}"
         assert pipeline.metrics["files_processed"] == 0
+
+    @patch("stereomapper.runners.pipeline.version", return_value="9.9.9")
+    def test_resolve_version_tag_uses_package_version(self, mock_version):
+        """Version tag is derived from the installed package version."""
+        assert StereomapperPipeline._resolve_version_tag() == "v9.9.9"
+        mock_version.assert_called_once_with("stereomapper")
+
+    @patch(
+        "stereomapper.runners.pipeline.version",
+        side_effect=PackageNotFoundError("stereomapper"),
+    )
+    def test_resolve_version_tag_package_not_found(self, mock_version):
+        """Version tag falls back to v0.0.0 when the package is not installed."""
+        assert StereomapperPipeline._resolve_version_tag() == "v0.0.0"
 
     @patch("stereomapper.runners.pipeline.psutil")
     def test_validate_config_valid(self, mock_psutil, basic_config):
