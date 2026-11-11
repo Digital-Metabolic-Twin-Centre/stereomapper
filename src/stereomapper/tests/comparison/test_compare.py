@@ -1,7 +1,9 @@
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock, Mock, create_autospec, patch
 
 import pytest
+from rdkit import Chem
 
+from stereomapper.classification import RelationshipAnalyser
 from stereomapper.comparison.compare import (
     _analyze_pair,
     _is_valid_primary_result,
@@ -10,6 +12,7 @@ from stereomapper.comparison.compare import (
     _process_result,
     compare_cluster_relationships,
 )
+from stereomapper.models.stereo_classification import StereoClass
 
 
 class TestPreloadClusterMembers:
@@ -129,9 +132,9 @@ class TestIsValidPrimaryResult:
             assert not _is_valid_primary_result(result)
 
     def test_no_classification_case(self):
-        """Test the 'No classification' case."""
+        """Test the no-classification case ('Unclassified', SMRO:0008)."""
         result = Mock()
-        result.classification = "No classification"
+        result.classification = StereoClass.NO_CLASSIFICATION.value
         assert not _is_valid_primary_result(result)
 
     def test_valid_classifications(self):
@@ -161,7 +164,8 @@ class TestAnalyzePair:
 
     def setup_method(self):
         """Set up test fixtures."""
-        self.mock_analyser = Mock()
+        # autospec so calls with the wrong keyword names fail, as the real analyser does
+        self.mock_analyser = create_autospec(RelationshipAnalyser, instance=True)
         self.mock_fallback_analyser = Mock()
         self.mol_by_cid = {"cluster1": Mock(), "cluster2": Mock()}
         self.props_by_cid = {"cluster1": (0, False), "cluster2": (1, True)}
@@ -248,6 +252,81 @@ class TestAnalyzePair:
         assert result == mock_fallback_result
         assert result.penalties["used_fallback_method"] is True
         self.mock_fallback_analyser.analyze_relationship_fallback.assert_called_once()
+
+
+class TestAnalyzePairRealAnalyser:
+    """Test _analyze_pair against real RDKit molecules (L/D-alanine)."""
+
+    def setup_method(self):
+        """Set up test fixtures."""
+        self.mol_by_cid = {
+            "L": Chem.MolFromSmiles("C[C@H](N)C(=O)O"),
+            "D": Chem.MolFromSmiles("C[C@@H](N)C(=O)O"),
+        }
+        self.props_by_cid = {"L": (0, False), "D": (0, False)}
+        self.sru_by_cid = {}
+        self.fallback = Mock()
+
+    def _run(self, analyser, props=None):
+        with patch("stereomapper.comparison.compare.summary_logger"):
+            return _analyze_pair(
+                analyser,
+                self.fallback,
+                self.mol_by_cid,
+                props or self.props_by_cid,
+                {},
+                self.sru_by_cid,
+                "L",
+                "D",
+            )
+
+    def test_real_analyser_returns_primary_result(self):
+        """Valid pairs are classified by the primary analyser, not the fallback."""
+        result = self._run(RelationshipAnalyser())
+
+        assert result.classification == "Enantiomers"
+        self.fallback.analyze_relationship_fallback.assert_not_called()
+        assert not (getattr(result, "penalties", None) or {}).get("used_fallback_method")
+
+    def test_real_analyser_no_classification_uses_fallback(self):
+        """A genuine 'Unclassified' primary result (radioactivity mismatch) still falls back."""
+        fallback_result = Mock()
+        fallback_result.penalties = {}
+        self.fallback.analyze_relationship_fallback.return_value = fallback_result
+
+        result = self._run(RelationshipAnalyser(), props={"L": (0, True), "D": (0, False)})
+
+        self.fallback.analyze_relationship_fallback.assert_called_once()
+        assert result is fallback_result
+        assert result.penalties["used_fallback_method"] is True
+
+    @pytest.mark.parametrize("exc_type", [TypeError, AttributeError, NameError])
+    def test_programming_error_is_raised_not_fallen_back(self, exc_type):
+        """Programming errors in primary analysis propagate instead of using the fallback."""
+        analyser = create_autospec(RelationshipAnalyser, instance=True)
+        analyser.calc_relationship.side_effect = exc_type("boom")
+
+        with patch("stereomapper.comparison.compare.logger"):
+            with pytest.raises(exc_type):
+                self._run(analyser)
+
+        self.fallback.analyze_relationship_fallback.assert_not_called()
+
+    def test_domain_error_still_uses_fallback(self):
+        """Chemistry/data errors from primary analysis keep falling back."""
+        analyser = create_autospec(RelationshipAnalyser, instance=True)
+        analyser.calc_relationship.side_effect = ValueError(
+            "Could not identify stereogenic elements"
+        )
+        fallback_result = Mock()
+        fallback_result.penalties = {}
+        self.fallback.analyze_relationship_fallback.return_value = fallback_result
+
+        with patch("stereomapper.comparison.compare.logger"):
+            result = self._run(analyser)
+
+        self.fallback.analyze_relationship_fallback.assert_called_once()
+        assert result is fallback_result
 
 
 class TestProcessResult:
